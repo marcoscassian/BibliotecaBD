@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Usuários{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_list.css') }}">
+
+<div class="topo">
+    <h2>Usuários</h2>
+    <a href="{{ url_for('usuarios.novo_usuario') }}" class="botao primario">Novo Usuário</a>
+</div>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Telefone</th>
+            <th>Data inscrição</th>
+            <th>Multa atual</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for u in usuarios %}
+        <tr>
+            <td>{{ u.ID_usuario }}</td>
+            <td>{{ u.Nome_usuario }}</td>
+            <td>{{ u.Email or '-' }}</td>
+            <td>{{ u.Numero_telefone or '-' }}</td>
+            <td>{{ u.Data_inscricao or '-' }}</td>
+            <td>{{ u.Multa_atual or '0.00' }}</td>
+            <td>
+                <a href="{{ url_for('usuarios.editar_usuario', id_usuario=u.ID_usuario) }}" class="botao pequeno secundario">Editar</a>
+                <form action="{{ url_for('usuarios.excluir_usuario', id_usuario=u.ID_usuario) }}" method="post" style="display:inline-block" onsubmit="return confirm('Excluir usuário?');">
+                    <button class="botao pequeno perigo">Excluir</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

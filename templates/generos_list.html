@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Gêneros{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_list.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="topo">
+    <h2>Gêneros</h2>
+    <a href="{{ url_for('generos.novo_genero') }}" class="botao primario">Novo Gênero</a>
+</div>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome do gênero</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for g in generos %}
+        <tr>
+            <td>{{ g.ID_genero }}</td>
+            <td>{{ g.Nome_genero }}</td>
+            <td>
+                <a href="{{ url_for('generos.editar_genero', id_genero=g.ID_genero) }}" class="botao pequeno secundario">Editar</a>
+                <form action="{{ url_for('generos.excluir_genero', id_genero=g.ID_genero) }}" 
+                      method="post" style="display:inline-block" 
+                      onsubmit="return confirm('Excluir gênero?');">
+                    <button class="botao pequeno perigo" type="submit">Excluir</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

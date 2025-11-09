@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Autores{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_list.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="topo">
+    <h2>Autores</h2>
+    <a href="{{ url_for('autores.novo_autor') }}" class="botao primario">Novo Autor</a>
+</div>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Nacionalidade</th>
+            <th>Data nascimento</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for a in autores %}
+        <tr>
+            <td>{{ a.ID_autor }}</td>
+            <td>{{ a.Nome_autor }}</td>
+            <td>{{ a.Nacionalidade or '-' }}</td>
+            <td>{{ a.Data_nascimento or '-' }}</td>
+            <td>
+                <a href="{{ url_for('autores.editar_autor', id_autor=a.ID_autor) }}" class="botao pequeno secundario">Editar</a>
+                <form action="{{ url_for('autores.excluir_autor', id_autor=a.ID_autor) }}" method="post" style="display:inline-block" onsubmit="return confirm('Excluir autor?');">
+                    <button class="botao pequeno perigo">Excluir</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Início{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="sobre">
+    <h1>Sistema de Biblioteca</h1>
+
+    <p>Este sistema permite gerenciar livros, autores, editoras, usuários e empréstimos através do menu superior.</p>
+    <hr>
+    <p>Atividade desenvolvida por Fabian, Ludimila, Marcos e Ícaro para a matéria de Banco de Dados do 3° ano de Infoweb, sob orientação do professor Hugo Wendell.</p>
+</div>
+{% endblock %}

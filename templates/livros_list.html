@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Livros{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_list.css') }}">
+
+<div class="topo">
+    <h2>Livros</h2>
+    <a href="{{ url_for('livros.novo_livro') }}" class="botao primario">Novo Livro</a>
+</div>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Autor</th>
+            <th>Gênero</th>
+            <th>Editora</th>
+            <th>ISBN</th>
+            <th>Ano</th>
+            <th>Qtd.</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for l in livros %}
+        <tr>
+            <td>{{ l.ID_livro }}</td>
+            <td>{{ l.Titulo }}</td>
+            <td>{{ l.Nome_autor or '-' }}</td>
+            <td>{{ l.Nome_genero or '-' }}</td>
+            <td>{{ l.Nome_editora or '-' }}</td>
+            <td>{{ l.ISBN }}</td>
+            <td>{{ l.Ano_publicacao or '-' }}</td>
+            <td>{{ l.Quantidade_disponivel or 0 }}</td>
+            <td>
+                <a href="{{ url_for('livros.editar_livro', id_livro=l.ID_livro) }}" class="botao pequeno secundario">Editar</a>
+                <form action="{{ url_for('livros.excluir_livro', id_livro=l.ID_livro) }}" method="post" style="display:inline-block" onsubmit="return confirm('Excluir livro?');">
+                    <button class="botao pequeno perigo">Excluir</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

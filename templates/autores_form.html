@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar Autor' if autor else 'Novo Autor' }}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_form.css') }}">
+{% endblock %}
+
+{% block content %}
+<form method="post" class="formulario">
+    <h2>{{ 'Editar Autor' if autor else 'Novo Autor' }}</h2>
+
+    <div class="grupo-campo">
+        <label>Nome do Autor</label>
+        <input type="text" name="Nome_autor" required value="{{ autor.Nome_autor if autor else '' }}">
+    </div>
+
+    <div class="grupo-campo">
+        <label>Nacionalidade</label>
+        <input type="text" name="Nacionalidade" value="{{ autor.Nacionalidade if autor else '' }}">
+    </div>
+
+    <div class="grupo-campo">
+        <label>Data de Nascimento</label>
+        <input type="date" name="Data_nascimento" value="{{ autor.Data_nascimento if autor and autor.Data_nascimento else '' }}">
+    </div>
+
+    <div class="grupo-campo">
+        <label>Biografia</label>
+        <textarea name="Biografia" rows="4">{{ autor.Biografia if autor else '' }}</textarea>
+    </div>
+
+    <div class="botoes-formulario">
+        <button type="submit" class="botao botao-verde">Salvar</button>
+        <a href="{{ url_for('autores.listar_autores') }}" class="botao botao-cinza">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

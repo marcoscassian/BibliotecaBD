@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar Editora' if editora else 'Nova Editora' }}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_form.css') }}">
+{% endblock %}
+
+{% block content %}
+<form method="post" class="formulario">
+    <h2>{{ 'Editar Editora' if editora else 'Nova Editora' }}</h2>
+
+    <div class="grupo-campo">
+        <label>Nome da Editora</label>
+        <input type="text" name="Nome_editora" required
+               value="{{ editora.Nome_editora if editora else '' }}">
+    </div>
+
+    <div class="grupo-campo">
+        <label>Endereço</label>
+        <textarea name="Endereco_editora" rows="3">{{ editora.Endereco_editora if editora else '' }}</textarea>
+    </div>
+
+    <div class="botoes-formulario">
+        <button type="submit" class="botao botao-verde">Salvar</button>
+        <a href="{{ url_for('editoras.listar_editoras') }}" class="botao botao-cinza">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

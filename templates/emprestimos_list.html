@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Empréstimos{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_list.css') }}">
+
+<div class="topo">
+    <h2>Empréstimos</h2>
+    <a href="{{ url_for('emprestimos.novo_emprestimo') }}" class="botao primario">Novo Empréstimo</a>
+</div>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Usuário</th>
+            <th>Livro</th>
+            <th>Data Empréstimo</th>
+            <th>Devolução Prevista</th>
+            <th>Devolução Real</th>
+            <th>Status</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for e in emprestimos %}
+        <tr>
+            <td>{{ e.ID_emprestimo }}</td>
+            <td>{{ e.Nome_usuario }}</td>
+            <td>{{ e.Titulo }}</td>
+            <td>{{ e.Data_emprestimo or '-' }}</td>
+            <td>{{ e.Data_devolucao_prevista or '-' }}</td>
+            <td>{{ e.Data_devolucao_real or '-' }}</td>
+            <td>{{ e.Status_emprestimo }}</td>
+            <td>
+                <a href="{{ url_for('emprestimos.editar_emprestimo', id_emprestimo=e.ID_emprestimo) }}" class="botao pequeno secundario">Editar</a>
+                <form action="{{ url_for('emprestimos.excluir_emprestimo', id_emprestimo=e.ID_emprestimo) }}" method="post" style="display:inline-block" onsubmit="return confirm('Excluir empréstimo?');">
+                    <button class="botao pequeno perigo">Excluir</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

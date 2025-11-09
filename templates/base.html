@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema Biblioteca{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    {% block css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a class="marca" href="{{ url_for('index') }}">Biblioteca</a>
+            <ul class="menu-navegacao">
+                <li><a href="{{ url_for('autores.listar_autores') }}">Autores</a></li>
+                <li><a href="{{ url_for('generos.listar_generos') }}">Gêneros</a></li>
+                <li><a href="{{ url_for('editoras.listar_editoras') }}">Editoras</a></li>
+                <li><a href="{{ url_for('usuarios.listar_usuarios') }}">Usuários</a></li>
+                <li><a href="{{ url_for('livros.listar_livros') }}">Livros</a></li>
+                <li><a href="{{ url_for('emprestimos.listar_emprestimos') }}">Empréstimos</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container-principal">
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+            {% if msgs %}
+                {% for cat, msg in msgs %}
+                    <div class="aviso {{ cat }}">
+                        {{ msg }}
+                        <button class="botao-fechar" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
