@@ -27,7 +27,7 @@ python -m venv env
 env\Scripts\activate
 # Linux/Mac
 source env/bin/activate
-
+```
 
 3. **Instale as dependências:**
 
@@ -62,3 +62,4 @@ Sob orientação do professor Hugo Wendell.
 
 
 ---
+
