@@ -8,7 +8,7 @@ usuarios_bp = Blueprint("usuarios", __name__, url_prefix="/usuarios")
 def listar_usuarios():
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM Usuarios ORDER BY ID_usuario")
+    cur.execute("select * from Usuarios ORDER BY ID_usuario")
     usuarios = cur.fetchall()
     cur.close()
     conn.close()
@@ -53,7 +53,7 @@ def editar_usuario(id_usuario):
 
         sql = (
             "UPDATE Usuarios SET Nome_usuario=%s, Email=%s, Numero_telefone=%s, "
-            "Data_inscricao=%s, Multa_atual=%s WHERE ID_usuario=%s"
+            "Data_inscricao=%s, Multa_atual=%s where ID_usuario=%s"
         )
         cur.execute(sql, (nome, email, telefone, data_inscricao, multa, id_usuario))
         conn.commit()
@@ -62,7 +62,7 @@ def editar_usuario(id_usuario):
         flash("Usuário atualizado com sucesso!", "success")
         return redirect(url_for("usuarios.listar_usuarios"))
 
-    cur.execute("SELECT * FROM Usuarios WHERE ID_usuario=%s", (id_usuario,))
+    cur.execute("select * from Usuarios where ID_usuario=%s", (id_usuario,))
     usuario = cur.fetchone()
     cur.close()
     conn.close()
@@ -71,8 +71,23 @@ def editar_usuario(id_usuario):
 @usuarios_bp.route("/excluir/<int:id_usuario>", methods=["POST"])
 def excluir_usuario(id_usuario):
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM Usuarios WHERE ID_usuario=%s", (id_usuario,))
+    cur = conn.cursor(dictionary=True)
+    
+    #verif se tem emrepstimo com o livro
+    cur.execute("select COUNT(*) AS total from Emprestimos where Usuario_id = %s",(id_usuario,))
+    row = cur.fetchone()
+    tem_emprestimo = row["total"] > 0 #ver se tem alguma coisa ligada
+
+    if tem_emprestimo:
+        #se tetnar excluir enquanto tem uma foreing key mirando nele, o codigo explode
+        cur.close()
+        conn.close()
+        flash("Não é possível excluir o user porque existem empréstimos relacionados a ele.", "warning")
+        return redirect(url_for("usuarios.listar_usuarios"))
+    
+    #aq so roda se tiver dado false no if de cima
+    
+    cur.execute("delete from Usuarios where ID_usuario=%s", (id_usuario,))
     conn.commit()
     cur.close()
     conn.close()

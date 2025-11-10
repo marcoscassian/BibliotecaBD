@@ -9,14 +9,14 @@ def listar_livros():
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
     sql = (
-        "SELECT L.ID_livro, L.Titulo, L.ISBN, L.Ano_publicacao, "
+        "select L.ID_livro, L.Titulo, L.ISBN, L.Ano_publicacao, "
         "L.Quantidade_disponivel, "
         "A.Nome_autor, G.Nome_genero, E.Nome_editora "
-        "FROM Livros L "
-        "LEFT JOIN Autores A ON L.Autor_id = A.ID_autor "
-        "LEFT JOIN Generos G ON L.Genero_id = G.ID_genero "
-        "LEFT JOIN Editoras E ON L.Editora_id = E.ID_editora "
-        "ORDER BY L.ID_livro"
+        "from Livros L "
+        "left join Autores A ON L.Autor_id = A.ID_autor "
+        "left join Generos G ON L.Genero_id = G.ID_genero "
+        "left join Editoras E ON L.Editora_id = E.ID_editora "
+        "order by L.ID_livro"
     )
     cur.execute(sql)
     livros = cur.fetchall()
@@ -26,11 +26,11 @@ def listar_livros():
 
 def carregar_relacionamentos(conn):
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT ID_autor, Nome_autor FROM Autores ORDER BY Nome_autor")
+    cur.execute("select ID_autor, Nome_autor from Autores order by Nome_autor")
     autores = cur.fetchall()
-    cur.execute("SELECT ID_genero, Nome_genero FROM Generos ORDER BY Nome_genero")
+    cur.execute("select ID_genero, Nome_genero from Generos order by Nome_genero")
     generos = cur.fetchall()
-    cur.execute("SELECT ID_editora, Nome_editora FROM Editoras ORDER BY Nome_editora")
+    cur.execute("select ID_editora, Nome_editora from Editoras order by Nome_editora")
     editoras = cur.fetchall()
     cur.close()
     return autores, generos, editoras
@@ -92,7 +92,7 @@ def editar_livro(id_livro):
         sql = (
             "UPDATE Livros SET Titulo=%s, Autor_id=%s, ISBN=%s, Ano_publicacao=%s, "
             "Genero_id=%s, Editora_id=%s, Quantidade_disponivel=%s, Resumo=%s "
-            "WHERE ID_livro=%s"
+            "where ID_livro=%s"
         )
         cur2 = conn.cursor()
         cur2.execute(
@@ -106,7 +106,7 @@ def editar_livro(id_livro):
         flash("Livro atualizado com sucesso!", "success")
         return redirect(url_for("livros.listar_livros"))
 
-    cur.execute("SELECT * FROM Livros WHERE ID_livro=%s", (id_livro,))
+    cur.execute("select * from Livros where ID_livro=%s", (id_livro,))
     livro = cur.fetchone()
     cur.close()
     conn.close()
@@ -121,8 +121,22 @@ def editar_livro(id_livro):
 @livros_bp.route("/excluir/<int:id_livro>", methods=["POST"])
 def excluir_livro(id_livro):
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM Livros WHERE ID_livro=%s", (id_livro,))
+    cur = conn.cursor(dictionary=True)
+    
+    #verif se tem emrepstimo com o livro
+    cur.execute("select COUNT(*) AS total from Emprestimos where Livro_id = %s",(id_livro,))
+    row = cur.fetchone()
+    tem_emprestimo = row["total"] > 0 #ver se tem alguma coisa ligada
+
+    if tem_emprestimo:
+        #se tetnar excluir enquanto tem uma foreing key mirando nele, o codigo explode
+        cur.close()
+        conn.close()
+        flash("Não é possível excluir este livro porque existem empréstimos relacionados a ele.", "warning")
+        return redirect(url_for("livros.listar_livros"))
+    
+    #aq so roda se tiver dado false no if de cima
+    cur.execute("DELETE from Livros where ID_livro=%s", (id_livro,))
     conn.commit()
     cur.close()
     conn.close()
