@@ -4,7 +4,8 @@ DB_CONFIG = {
     "host": "localhost",
     "user": "root",
     "password": "",
-    "database": "db_trabalho3B"
+    "database": "db_trabalho3B",
+    "port": 3307
 }
 
 def get_connection():

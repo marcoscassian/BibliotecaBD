@@ -1,6 +1,4 @@
-/* ====== GERAL FORM ====== */
 
-/* Formulário geral */
 .formulario {
   max-width: 600px;
   margin: 20px auto;
@@ -11,14 +9,14 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Título do formulário */
+
 .formulario h2 {
   text-align: center;
   margin-bottom: 25px;
   color: #333;
 }
 
-/* Grupo de campo */
+
 .grupo-campo {
   display: flex;
   flex-direction: column;
@@ -49,13 +47,11 @@
   outline: none;
 }
 
-/* Textarea */
 .grupo-campo textarea {
   resize: vertical;
   min-height: 60px;
 }
 
-/* Botões */
 .botoes-formulario {
   display: flex;
   justify-content: flex-end;
@@ -74,7 +70,6 @@
   display: inline-block;
 }
 
-/* Botão verde (salvar) */
 .botao-verde {
   background-color: #28a745;
   color: #fff;
@@ -84,7 +79,6 @@
   background-color: #218838;
 }
 
-/* Botão cinza (cancelar) */
 .botao-cinza {
   background-color: #6c757d;
   color: #fff;
@@ -94,7 +88,6 @@
   background-color: #5a6268;
 }
 
-/* Responsividade */
 @media (max-width: 500px) {
   .formulario {
     padding: 15px;

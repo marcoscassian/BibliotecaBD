@@ -33,7 +33,7 @@
             <td>{{ e.Status_emprestimo }}</td>
             <td>
                 <a href="{{ url_for('emprestimos.editar_emprestimo', id_emprestimo=e.ID_emprestimo) }}" class="botao pequeno secundario">Editar</a>
-                <form action="{{ url_for('emprestimos.excluir_emprestimo', id_emprestimo=e.ID_emprestimo) }}" method="post" style="display:inline-block" onsubmit="return confirm('Excluir empréstimo?');">
+                <form action="{{ url_for('emprestimos.excluir_emprestimo', id_emprestimo=e.ID_emprestimo) }}" method="post" style="display:inline-block">
                     <button class="botao pequeno perigo">Excluir</button>
                 </form>
             </td>
