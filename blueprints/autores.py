@@ -70,6 +70,7 @@ def editar_autor(id_autor):
 def excluir_autor(id_autor):
     conn = get_connection()
     cur = conn.cursor()
+    cur.execute("UPDATE Livros SET Autor_id = NULL WHERE Autor_id = %s", (id_autor,))
     cur.execute("DELETE FROM Autores WHERE ID_autor = %s", (id_autor,))
     conn.commit()
     cur.close()

@@ -9,10 +9,10 @@ def listar_emprestimos():
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
     sql = (
-        "SELECT E.ID_emprestimo, U.Nome_usuario, L.Titulo, "
+        "select E.ID_emprestimo, U.Nome_usuario, L.Titulo, "
         "E.Data_emprestimo, E.Data_devolucao_prevista, "
         "E.Data_devolucao_real, E.Status_emprestimo "
-        "FROM Emprestimos E "
+        "from Emprestimos E "
         "JOIN Usuarios U ON E.Usuario_id = U.ID_usuario "
         "JOIN Livros L ON E.Livro_id = L.ID_livro "
         "ORDER BY E.ID_emprestimo DESC"
@@ -25,9 +25,9 @@ def listar_emprestimos():
 
 def carregar_usuarios_livros(conn):
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT ID_usuario, Nome_usuario FROM Usuarios ORDER BY Nome_usuario")
+    cur.execute("select ID_usuario, Nome_usuario from Usuarios ORDER BY Nome_usuario")
     usuarios = cur.fetchall()
-    cur.execute("SELECT ID_livro, Titulo FROM Livros ORDER BY Titulo")
+    cur.execute("select ID_livro, Titulo from Livros ORDER BY Titulo")
     livros = cur.fetchall()
     cur.close()
     return usuarios, livros
@@ -85,7 +85,7 @@ def editar_emprestimo(id_emprestimo):
             "UPDATE Emprestimos SET Usuario_id=%s, Livro_id=%s, "
             "Data_emprestimo=%s, Data_devolucao_prevista=%s, "
             "Data_devolucao_real=%s, Status_emprestimo=%s "
-            "WHERE ID_emprestimo=%s"
+            "where ID_emprestimo=%s"
         )
         cur2 = conn.cursor()
         cur2.execute(
@@ -99,7 +99,7 @@ def editar_emprestimo(id_emprestimo):
         flash("Empréstimo atualizado com sucesso!", "success")
         return redirect(url_for("emprestimos.listar_emprestimos"))
 
-    cur.execute("SELECT * FROM Emprestimos WHERE ID_emprestimo=%s", (id_emprestimo,))
+    cur.execute("select * from Emprestimos where ID_emprestimo=%s", (id_emprestimo,))
     emprestimo = cur.fetchone()
     cur.close()
     conn.close()
@@ -114,7 +114,7 @@ def editar_emprestimo(id_emprestimo):
 def excluir_emprestimo(id_emprestimo):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM Emprestimos WHERE ID_emprestimo=%s", (id_emprestimo,))
+    cur.execute("delete from Emprestimos where ID_emprestimo=%s", (id_emprestimo,))
     conn.commit()
     cur.close()
     conn.close()

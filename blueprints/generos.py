@@ -54,6 +54,7 @@ def editar_genero(id_genero):
 def excluir_genero(id_genero):
     conn = get_connection()
     cur = conn.cursor()
+    cur.execute("UPDATE Livros SET Genero_id = NULL WHERE Genero_id = %s", (id_genero,))
     cur.execute("DELETE FROM Generos WHERE ID_genero = %s", (id_genero,))
     conn.commit()
     cur.close()
