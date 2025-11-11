@@ -1,7 +1,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from db import get_connection
-
+from mysql.connector import IntegrityError
 livros_bp = Blueprint("livros", __name__, url_prefix="/livros")
 
 @livros_bp.route("/")
@@ -122,23 +122,19 @@ def editar_livro(id_livro):
 def excluir_livro(id_livro):
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
-    
-    #verif se tem emrepstimo com o livro
-    cur.execute("select COUNT(*) AS total from Emprestimos where Livro_id = %s",(id_livro,))
-    row = cur.fetchone()
-    tem_emprestimo = row["total"] > 0 #ver se tem alguma coisa ligada
 
-    if tem_emprestimo:
-        #se tetnar excluir enquanto tem uma foreing key mirando nele, o codigo explode
+    try:
+        # tentaa excluir o livro diretamente
+        cur.execute("DELETE FROM Livros WHERE ID_livro = %s", (id_livro,))
+        conn.commit()
+        flash("Livro excluído com sucesso!", "success")
+
+    except IntegrityError:
+        conn.rollback()
+        flash("Não é possível excluir este livro porque existem empréstimos relacionados a ele.", "warning")
+
+    finally:
+        # fecha tudo independbentemente do resultado
         cur.close()
         conn.close()
-        flash("Não é possível excluir este livro porque existem empréstimos relacionados a ele.", "warning")
-        return redirect(url_for("livros.listar_livros"))
-    
-    #aq so roda se tiver dado false no if de cima
-    cur.execute("DELETE from Livros where ID_livro=%s", (id_livro,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    flash("Livro excluído com sucesso!", "success")
     return redirect(url_for("livros.listar_livros"))
