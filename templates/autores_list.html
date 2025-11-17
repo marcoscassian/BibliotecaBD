@@ -30,7 +30,7 @@
             <td>{{ a.Data_nascimento or '-' }}</td>
             <td>
                 <a href="{{ url_for('autores.editar_autor', id_autor=a.ID_autor) }}" class="botao pequeno secundario">Editar</a>
-                <form action="{{ url_for('autores.excluir_autor', id_autor=a.ID_autor) }}" method="post" style="display:inline-block">
+                <form action="{{ url_for('autores.excluir_autor', id_autor=a.ID_autor) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este autor?');" style="display:inline-block">
                     <button class="botao pequeno perigo">Excluir</button>
                 </form>
             </td>

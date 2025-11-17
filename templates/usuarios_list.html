@@ -31,7 +31,7 @@
             <td>{{ u.Multa_atual or '0.00' }}</td>
             <td>
                 <a href="{{ url_for('usuarios.editar_usuario', id_usuario=u.ID_usuario) }}" class="botao pequeno secundario">Editar</a>
-                <form action="{{ url_for('usuarios.excluir_usuario', id_usuario=u.ID_usuario) }}" method="post" style="display:inline-block">
+                <form action="{{ url_for('usuarios.excluir_usuario', id_usuario=u.ID_usuario) }}" method="post" style="display:inline-block" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
                     <button class="botao pequeno perigo">Excluir</button>
                 </form>
             </td>

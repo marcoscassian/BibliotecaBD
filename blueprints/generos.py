@@ -1,6 +1,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from db import get_connection
+from mysql.connector import IntegrityError
 
 generos_bp = Blueprint("generos", __name__, url_prefix="/generos")
 
@@ -54,10 +55,13 @@ def editar_genero(id_genero):
 def excluir_genero(id_genero):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE Livros SET Genero_id = NULL WHERE Genero_id = %s", (id_genero,))
-    cur.execute("DELETE FROM Generos WHERE ID_genero = %s", (id_genero,))
-    conn.commit()
-    cur.close()
+    try:
+        cur.execute("DELETE FROM Generos WHERE ID_genero = %s", (id_genero,))
+        conn.commit()
+        flash("Gênero excluído com sucesso!", "success")
+    except IntegrityError:
+        flash("Não é possivel excluir esse gênero, a um livro associado a ele!", "warning")
+    finally:
+        cur.close()
     conn.close()
-    flash("Gênero excluído com sucesso!", "success")
     return redirect(url_for("generos.listar_generos"))

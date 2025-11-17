@@ -28,7 +28,7 @@
             <td>{{ e.Endereco_editora or '-' }}</td>
             <td>
                 <a href="{{ url_for('editoras.editar_editora', id_editora=e.ID_editora) }}" class="botao pequeno secundario">Editar</a>
-                <form action="{{ url_for('editoras.excluir_editora', id_editora=e.ID_editora) }}" method="post" style="display:inline-block">
+                <form action="{{ url_for('editoras.excluir_editora', id_editora=e.ID_editora) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir esta editora?');" style="display:inline-block">
                     <button type="submit" class="botao pequeno perigo">Excluir</button>
                 </form>
             </td>

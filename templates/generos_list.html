@@ -26,8 +26,8 @@
             <td>{{ g.Nome_genero }}</td>
             <td>
                 <a href="{{ url_for('generos.editar_genero', id_genero=g.ID_genero) }}" class="botao pequeno secundario">Editar</a>
-                <form action="{{ url_for('generos.excluir_genero', id_genero=g.ID_genero) }}" 
-                      method="post" style="display:inline-block">
+                <form action="{{ url_for('generos.excluir_genero', id_genero=g.ID_genero) }} " 
+                      method="post" onsubmit="return confirm('Tem certeza que deseja excluir este gênero?');" style="display:inline-block" style="display:inline-block">
                     <button class="botao pequeno perigo" type="submit">Excluir</button>
                 </form>
             </td>

@@ -1,6 +1,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from db import get_connection
+from mysql.connector import IntegrityError
 
 editoras_bp = Blueprint("editoras", __name__, url_prefix="/editoras")
 
@@ -62,10 +63,13 @@ def editar_editora(id_editora):
 def excluir_editora(id_editora):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE Livros SET Editora_id = NULL WHERE Editora_id = %s", (id_editora,))
-    cur.execute("DELETE FROM Editoras WHERE ID_editora=%s", (id_editora,))
-    conn.commit()
-    cur.close()
+    try:
+        cur.execute("DELETE FROM Editoras WHERE ID_editora = %s", (id_editora,))
+        conn.commit()
+        flash("Editora excluída com sucesso!", "success")
+    except IntegrityError:
+        flash("Não é possivel excluir essa editora, a um livro associado a ele!", "warning")
+    finally:
+        cur.close()
     conn.close()
-    flash("Editora excluída com sucesso!", "success")
     return redirect(url_for("editoras.listar_editoras"))
