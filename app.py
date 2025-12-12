@@ -7,6 +7,8 @@ from blueprints.usuarios import usuarios_bp
 from blueprints.livros import livros_bp
 from blueprints.emprestimos import emprestimos_bp
 
+from create_db import criar_tabelas
+
 def cria_app():
     app = Flask(__name__)
     app.secret_key = "chave_super_secreta"
@@ -25,5 +27,6 @@ def cria_app():
     return app
 
 if __name__ == "__main__":
+    criar_tabelas()   
     app = cria_app()
     app.run(debug=True)
