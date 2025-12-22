@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='geral_list.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="topo">
+    <h2>Auditoria do Sistema</h2>
+</div>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Tabela</th>
+            <th>Operação</th>
+            <th>Usuário</th>
+            <th>Descrição</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.data_operacao }}</td>
+            <td>{{ log.tabela_afetada }}</td>
+            <td>{{ log.operacao }}</td>
+            <td>{{ log.nome_usuario or "—" }}</td>
+            <td>{{ log.descricao }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+

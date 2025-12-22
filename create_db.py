@@ -64,22 +64,96 @@ def criar_tabelas():
         );
     """)
 
+def criar_triggers():
+    conn = get_connection()
+    cursor = conn.cursor()
+
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS Emprestimos (
-            ID_emprestimo INT AUTO_INCREMENT PRIMARY KEY,
-            Usuario_id INT NOT NULL,
-            Livro_id INT NOT NULL,
+    create table if not exists logs_auditoria (
+        id_log int auto_increment primary key,
+        tabela_afetada varchar(50),
+        operacao varchar(20),
+        data_operacao datetime,
+        usuario_afetado int,
+        descricao text
+    );
+    """)
 
-            Data_emprestimo DATE NOT NULL,
-            Data_devolucao_prevista DATE,
-            Data_devolucao_real DATE,
-            Status_emprestimo VARCHAR(50),
+    cursor.execute("drop trigger if exists trg_validar_estoque_livro;")
+    cursor.execute("drop trigger if exists trg_log_emprestimo;")
+    cursor.execute("drop procedure if exists registrar_log;")
 
-            FOREIGN KEY (Usuario_id) REFERENCES Usuarios(ID_usuario)
-                ON DELETE RESTRICT ON UPDATE CASCADE,
 
-            FOREIGN KEY (Livro_id) REFERENCES Livros(ID_livro)
-                ON DELETE RESTRICT ON UPDATE CASCADE
+    cursor.execute("""
+    create procedure registrar_log(
+        p_tabela varchar(50),
+        p_operacao varchar(20),
+        p_usuario int,
+        p_descricao text
+    )
+    begin
+        insert into logs_auditoria
+        (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
+        values
+        (p_tabela, p_operacao, now(), p_usuario, p_descricao);
+    end;
+    """)
+
+
+    cursor.execute("""
+    create trigger trg_validar_estoque_livro
+    before insert on emprestimos
+    for each row
+    begin
+        declare qtd int;
+
+        select quantidade_disponivel
+        into qtd
+        from livros
+        where id_livro = new.livro_id;
+
+        if qtd <= 0 then
+            signal sqlstate '45000'
+            set message_text = 'livro indisponível para empréstimo';
+        end if;
+    end;
+    """)
+
+ 
+    cursor.execute("""
+    create trigger trg_log_emprestimo
+    after insert on emprestimos
+    for each row
+    begin
+        declare nome_livro varchar(255);
+
+        select titulo
+        into nome_livro
+        from livros
+        where id_livro = new.livro_id;
+
+        call registrar_log(
+            'emprestimo',
+            'inserido',
+            new.usuario_id,
+            concat('emprestimo realizado do livro "', nome_livro, '"')
+        );
+    end;
+
+    """)
+    cursor.execute("""
+        create table if not exists emprestimos (
+            id_emprestimo int auto_increment primary key,
+            usuario_id int not null,
+            livro_id int not null,
+            data_emprestimo date not null,
+            status_emprestimo varchar(20) default 'ativo',
+
+            foreign key (usuario_id) references usuarios(id_usuario)
+                on delete restrict on update cascade,
+
+            foreign key (livro_id) references livros(id_livro)
+                on delete restrict on update cascade
         );
     """)
 
@@ -87,4 +161,5 @@ def criar_tabelas():
     cursor.close()
     conn.close()
 
-    print("✓ Todas as tabelas foram criadas com sucesso!")
+    print("✓ criados com sucesso")
+

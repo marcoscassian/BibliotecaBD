@@ -35,7 +35,7 @@
             <td>{{ l.Quantidade_disponivel or 0 }}</td>
             <td>
                 <a href="{{ url_for('livros.editar_livro', id_livro=l.ID_livro) }}" class="botao pequeno secundario">Editar</a>
-                <form action="{{ url_for('livros.excluir_livro', id_livro=l.ID_livro) }}" method="post" style="display:inline-block">
+                <form action="{{ url_for('livros.excluir_livro', id_livro=l.ID_livro) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este livro?');" style="display:inline-block">
                     <button class="botao pequeno perigo">Excluir</button>
                 </form>
             </td>

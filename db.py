@@ -3,8 +3,8 @@ import mysql.connector
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "usbw",
-    "port": 3307,
+    "password": "",
+    "port": 3306,
     "database": "db_trabalho3b",
 }
 

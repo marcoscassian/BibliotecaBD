@@ -1,7 +1,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from db import get_connection
-
+import mysql.connector
 emprestimos_bp = Blueprint("emprestimos", __name__, url_prefix="/emprestimos")
 
 @emprestimos_bp.route("/")
@@ -46,18 +46,33 @@ def novo_emprestimo():
         status = request.form.get("Status_emprestimo")
 
         sql = (
-            "INSERT INTO Emprestimos "
-            "(Usuario_id, Livro_id, Data_emprestimo, Data_devolucao_prevista, "
-            "Data_devolucao_real, Status_emprestimo) "
-            "VALUES (%s, %s, %s, %s, %s, %s)"
+            "insert into emprestimos "
+            "(usuario_id, livro_id, data_emprestimo, data_devolucao_prevista, "
+            "data_devolucao_real, status_emprestimo) "
+            "values (%s, %s, %s, %s, %s, %s)"
         )
+
         cur = conn.cursor()
-        cur.execute(sql, (usuario_id, livro_id, data_emp, data_prev, data_real, status))
-        conn.commit()
-        cur.close()
-        conn.close()
-        flash("Empréstimo cadastrado com sucesso!", "success")
-        return redirect(url_for("emprestimos.listar_emprestimos"))
+
+        try:
+            cur.execute(sql, (usuario_id, livro_id, data_emp, data_prev, data_real, status))
+            conn.commit()
+            flash("Empréstimo cadastrado com sucesso!", "success")
+            return redirect(url_for("emprestimos.listar_emprestimos"))
+
+        except mysql.connector.Error as err:
+            conn.rollback()
+
+            if "livro indisponível para empréstimo" in str(err):
+                flash("Este livro não possui estoque disponível.", "danger")
+            else:
+                flash("Erro ao cadastrar empréstimo.", "danger")
+
+            return redirect(url_for("emprestimos.novo_emprestimo"))
+
+        finally:
+            cur.close()
+            conn.close()
 
     conn.close()
     return render_template(
@@ -66,6 +81,7 @@ def novo_emprestimo():
         usuarios=usuarios,
         livros=livros,
     )
+
 
 @emprestimos_bp.route("/editar/<int:id_emprestimo>", methods=["GET", "POST"])
 def editar_emprestimo(id_emprestimo):
