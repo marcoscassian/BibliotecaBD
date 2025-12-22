@@ -4,7 +4,7 @@ DB_CONFIG = {
     "host": "localhost",
     "user": "root",
     "password": "",
-    "port": 3306,
+    "port": 3307,
     "database": "db_trabalho3b",
 }
 

@@ -61,6 +61,9 @@ def novo_emprestimo():
             return redirect(url_for("emprestimos.listar_emprestimos"))
 
         except mysql.connector.Error as err:
+            print(err)
+            print(err.msg)
+            print(err.errno)
             conn.rollback()
 
             if "livro indisponível para empréstimo" in str(err):
