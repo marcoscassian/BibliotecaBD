@@ -67,7 +67,7 @@ def novo_emprestimo():
             conn.rollback()
 
             if "livro indisponível para empréstimo" in str(err):
-                flash("Este livro não possui estoque disponível.", "danger")
+                flash("Este livro não possui estoque disponível ou você ja possui um emprestimo pedente igual a esse.", "danger")
             else:
                 flash("Erro ao cadastrar empréstimo.", "danger")
 
