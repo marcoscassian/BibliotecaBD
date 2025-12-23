@@ -5,6 +5,28 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='geral_form.css') }}">
 {% endblock %}
 
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dataEmprestimo = document.querySelector('input[name="Data_emprestimo"]');
+    const dataPrevista = document.querySelector('input[name="Data_devolucao_prevista"]');
+
+    dataEmprestimo.addEventListener('change', function() {
+        if (this.value) {
+            const date = new Date(this.value);
+            date.setMonth(date.getMonth() + 1);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            dataPrevista.value = `${year}-${month}-${day}`;
+        } else {
+            dataPrevista.value = '';
+        }
+    });
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <form method="post" class="formulario">
     <h2>{{ 'Editar Empréstimo' if emprestimo else 'Novo Empréstimo' }}</h2>
@@ -43,7 +65,7 @@
 
     <div class="grupo-campo">
         <label>Data de Devolução Prevista</label>
-        <input type="date" name="Data_devolucao_prevista"
+        <input type="date" name="Data_devolucao_prevista" readonly
                value="{{ emprestimo.Data_devolucao_prevista if emprestimo and emprestimo.Data_devolucao_prevista else '' }}">
     </div>
 
