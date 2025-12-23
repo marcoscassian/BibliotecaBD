@@ -81,6 +81,7 @@ def criar_triggers():
 
     cursor.execute("drop trigger if exists trg_validar_estoque_livro;")
     cursor.execute("drop trigger if exists trg_log_emprestimo;")
+    cursor.execute("drop trigger if exists trg_calcular_devolucao_prevista;")
     cursor.execute("drop procedure if exists registrar_log;")
 
 
@@ -141,13 +142,24 @@ def criar_triggers():
     end;
 
     """)
+
+    cursor.execute("""
+    create trigger trg_calcular_devolucao_prevista
+    before insert on emprestimos
+    for each row
+    begin
+        set new.data_devolucao_prevista = date_add(new.data_emprestimo, interval 1 month);
+    end;
+    """)
     cursor.execute("""
         create table if not exists emprestimos (
             id_emprestimo int auto_increment primary key,
             usuario_id int not null,
             livro_id int not null,
             data_emprestimo date not null,
-            status_emprestimo varchar(20) default 'ativo',
+            data_devolucao_prevista date,
+            data_devolucao_real date,
+            status_emprestimo enum('pendente', 'devolvido', 'atrasado') default 'pendente',
 
             foreign key (usuario_id) references usuarios(id_usuario)
                 on delete restrict on update cascade,
