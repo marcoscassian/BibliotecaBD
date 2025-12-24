@@ -100,6 +100,8 @@ def criar_triggers():
     cursor.execute("drop trigger if exists trg_validar_estoque_livro;")
     cursor.execute("drop trigger if exists trg_log_emprestimo;")
     cursor.execute("drop trigger if exists trg_calcular_devolucao_prevista;")
+    cursor.execute("drop trigger if exists trg_set_data_emprestimo;")
+    cursor.execute("drop trigger if exists trg_prevent_duplicate_loan;")
     cursor.execute("drop procedure if exists registrar_log;")
 
 
@@ -170,9 +172,44 @@ def criar_triggers():
     end;
     """)
 
+    cursor.execute("""
+    create trigger trg_set_data_emprestimo
+    before insert on emprestimos
+    for each row
+    begin
+        if new.data_emprestimo is null then
+            set new.data_emprestimo = now();
+        end if;
+    end;
+    """)
+
+    cursor.execute("""
+    create trigger trg_prevent_duplicate_loan
+    before insert on emprestimos
+    for each row
+    begin
+        declare existing_count int;
+
+        select count(*)
+        into existing_count
+        from emprestimos
+        where usuario_id = new.usuario_id
+        and livro_id = new.livro_id
+        and status_emprestimo != 'devolvido';
+
+        if existing_count > 0 then
+            signal sqlstate '45000'
+            set message_text = 'Empréstimo duplicado: usuário já possui empréstimo ativo para este livro';
+        end if;
+    end;
+    """)
+
     conn.commit()
     cursor.close()
     conn.close()
 
     print("✓ criados com sucesso")
+
+criar_tabelas()
+criar_triggers()
 

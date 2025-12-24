@@ -40,7 +40,9 @@ def novo_emprestimo():
     if request.method == "POST":
         usuario_id = request.form.get("Usuario_id")
         livro_id = request.form.get("Livro_id")
-        data_emp = request.form.get("Data_emprestimo") or None
+        data_emp = request.form.get("Data_emprestimo")
+        if data_emp == '':
+            data_emp = None
         data_prev = request.form.get("Data_devolucao_prevista") or None
         data_real = request.form.get("Data_devolucao_real") or None
         status = request.form.get("Status_emprestimo")
@@ -95,7 +97,9 @@ def editar_emprestimo(id_emprestimo):
     if request.method == "POST":
         usuario_id = request.form.get("Usuario_id")
         livro_id = request.form.get("Livro_id")
-        data_emp = request.form.get("Data_emprestimo") or None
+        data_emp = request.form.get("Data_emprestimo")
+        if data_emp == '':
+            data_emp = None
         data_prev = request.form.get("Data_devolucao_prevista") or None
         data_real = request.form.get("Data_devolucao_real") or None
         status = request.form.get("Status_emprestimo")
