@@ -63,16 +63,15 @@ def novo_emprestimo():
             return redirect(url_for("emprestimos.listar_emprestimos"))
 
         except mysql.connector.Error as err:
-            print(err)
-            print(err.msg)
-            print(err.errno)
             conn.rollback()
-
-            if "livro indisponível para empréstimo" in str(err):
-                flash("Este livro não possui estoque disponível ou você ja possui um emprestimo pedente igual a esse.", "danger")
+            error_msg = str(err.msg).lower()
+            print(f"Erro capturado: {err}")
+            if "livro indisponível" in error_msg:
+                flash("Este livro não possui estoque disponível.", "danger")
+            elif "duplicado" in error_msg or "empréstimo ativo" in error_msg:
+                flash("Este usuário já possui um empréstimo pendente para este livro.", "danger")
             else:
                 flash("Erro ao cadastrar empréstimo.", "danger")
-
             return redirect(url_for("emprestimos.novo_emprestimo"))
 
         finally:
@@ -97,18 +96,16 @@ def editar_emprestimo(id_emprestimo):
     if request.method == "POST":
         usuario_id = request.form.get("Usuario_id")
         livro_id = request.form.get("Livro_id")
-        data_emp = request.form.get("Data_emprestimo")
-        if data_emp == '':
-            data_emp = None
+        data_emp = request.form.get("Data_emprestimo") or None
         data_prev = request.form.get("Data_devolucao_prevista") or None
         data_real = request.form.get("Data_devolucao_real") or None
         status = request.form.get("Status_emprestimo")
 
         sql = (
-            "UPDATE Emprestimos SET Usuario_id=%s, Livro_id=%s, "
-            "Data_emprestimo=%s, Data_devolucao_prevista=%s, "
-            "Data_devolucao_real=%s, Status_emprestimo=%s "
-            "where ID_emprestimo=%s"
+            "UPDATE emprestimos SET usuario_id=%s, livro_id=%s, "
+            "data_emprestimo=%s, data_devolucao_prevista=%s, "
+            "data_devolucao_real=%s, status_emprestimo=%s "
+            "WHERE id_emprestimo=%s"
         )
         cur2 = conn.cursor()
         cur2.execute(
@@ -122,10 +119,18 @@ def editar_emprestimo(id_emprestimo):
         flash("Empréstimo atualizado com sucesso!", "success")
         return redirect(url_for("emprestimos.listar_emprestimos"))
 
-    cur.execute("select * from Emprestimos where ID_emprestimo=%s", (id_emprestimo,))
+    cur.execute("SELECT * FROM emprestimos WHERE id_emprestimo=%s", (id_emprestimo,))
     emprestimo = cur.fetchone()
+
+    for campo in ['data_emprestimo', 'data_devolucao_prevista', 'data_devolucao_real']:
+        if emprestimo[campo]:
+            emprestimo[campo] = emprestimo[campo].strftime('%Y-%m-%d')
+        else:
+            emprestimo[campo] = ''
+
     cur.close()
     conn.close()
+
     return render_template(
         "emprestimos_form.html",
         emprestimo=emprestimo,

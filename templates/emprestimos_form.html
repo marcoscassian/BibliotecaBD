@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <option value="">-- Selecione --</option>
             {% for u in usuarios %}
             <option value="{{ u.ID_usuario }}"
-                {% if emprestimo and emprestimo.Usuario_id == u.ID_usuario %}selected{% endif %}>
+                {% if emprestimo and emprestimo.usuario_id == u.ID_usuario %}selected{% endif %}>
                 {{ u.Nome_usuario }}
             </option>
             {% endfor %}
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <option value="">-- Selecione --</option>
             {% for l in livros %}
             <option value="{{ l.ID_livro }}"
-                {% if emprestimo and emprestimo.Livro_id == l.ID_livro %}selected{% endif %}>
+                {% if emprestimo and emprestimo.livro_id == l.ID_livro %}selected{% endif %}>
                 {{ l.Titulo }}
             </option>
             {% endfor %}
@@ -60,19 +60,19 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="grupo-campo">
         <label>Data de Empréstimo</label>
         <input type="date" name="Data_emprestimo"
-               value="{{ emprestimo.Data_emprestimo if emprestimo and emprestimo.Data_emprestimo else '' }}">
+            value="{{ emprestimo.data_emprestimo if emprestimo else '' }}">
     </div>
 
     <div class="grupo-campo">
         <label>Data de Devolução Prevista</label>
         <input type="date" name="Data_devolucao_prevista" readonly
-               value="{{ emprestimo.Data_devolucao_prevista if emprestimo and emprestimo.Data_devolucao_prevista else '' }}">
+            value="{{ emprestimo.data_devolucao_prevista if emprestimo else '' }}">
     </div>
 
     <div class="grupo-campo">
         <label>Data de Devolução Real</label>
         <input type="date" name="Data_devolucao_real"
-               value="{{ emprestimo.Data_devolucao_real if emprestimo and emprestimo.Data_devolucao_real else '' }}">
+               value="{{ emprestimo.data_devolucao_real if emprestimo and emprestimo.data_devolucao_real else '' }}">
     </div>
 
     <div class="grupo-campo">
