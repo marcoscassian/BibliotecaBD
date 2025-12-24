@@ -63,6 +63,24 @@ def criar_tabelas():
                 ON DELETE RESTRICT ON UPDATE CASCADE
         );
     """)
+    
+    cursor.execute("""
+        create table if not exists emprestimos (
+            id_emprestimo int auto_increment primary key,
+            usuario_id int not null,
+            livro_id int not null,
+            data_emprestimo date not null,
+            data_devolucao_prevista date,
+            data_devolucao_real date,
+            status_emprestimo enum('pendente', 'devolvido', 'atrasado') default 'pendente',
+
+            foreign key (usuario_id) references usuarios(id_usuario)
+                on delete restrict on update cascade,
+
+            foreign key (livro_id) references livros(id_livro)
+                on delete restrict on update cascade
+        );
+    """)
 
 def criar_triggers():
     conn = get_connection()
@@ -150,23 +168,6 @@ def criar_triggers():
     begin
         set new.data_devolucao_prevista = date_add(new.data_emprestimo, interval 1 month);
     end;
-    """)
-    cursor.execute("""
-        create table if not exists emprestimos (
-            id_emprestimo int auto_increment primary key,
-            usuario_id int not null,
-            livro_id int not null,
-            data_emprestimo date not null,
-            data_devolucao_prevista date,
-            data_devolucao_real date,
-            status_emprestimo enum('pendente', 'devolvido', 'atrasado') default 'pendente',
-
-            foreign key (usuario_id) references usuarios(id_usuario)
-                on delete restrict on update cascade,
-
-            foreign key (livro_id) references livros(id_livro)
-                on delete restrict on update cascade
-        );
     """)
 
     conn.commit()
