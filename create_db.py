@@ -121,6 +121,9 @@ def criar_triggers():
     """)
 
 
+    #gatilhos de validação
+
+    #1
     cursor.execute("""
     create trigger trg_validar_estoque_livro
     before insert on emprestimos
@@ -140,7 +143,31 @@ def criar_triggers():
     end;
     """)
 
- 
+    #2
+    cursor.execute("""
+    create trigger trg_prevent_duplicate_loan
+    before insert on emprestimos
+    for each row
+    begin
+        declare existing_count int;
+
+        select count(*)
+        into existing_count
+        from emprestimos
+        where usuario_id = new.usuario_id
+        and livro_id = new.livro_id
+        and status_emprestimo != 'devolvido';
+
+        if existing_count > 0 then
+            signal sqlstate '45000'
+            set message_text = 'Empréstimo duplicado: usuário já possui empréstimo ativo para este livro';
+        end if;
+    end;
+    """)
+
+    #gatilhos de auditoria
+
+    #1
     cursor.execute("""
     create trigger trg_log_emprestimo
     after insert on emprestimos
@@ -163,6 +190,9 @@ def criar_triggers():
 
     """)
 
+    #gatilhos de geração automática de valores
+
+    #1
     cursor.execute("""
     create trigger trg_calcular_devolucao_prevista
     before insert on emprestimos
@@ -172,6 +202,7 @@ def criar_triggers():
     end;
     """)
 
+    #2
     cursor.execute("""
     create trigger trg_set_data_emprestimo
     before insert on emprestimos
@@ -183,26 +214,62 @@ def criar_triggers():
     end;
     """)
 
+    #3
     cursor.execute("""
-    create trigger trg_prevent_duplicate_loan
-    before insert on emprestimos
+    create trigger trg_gerar_status_emprestimo
+    before update on emprestimos
     for each row
     begin
-        declare existing_count int;
-
-        select count(*)
-        into existing_count
-        from emprestimos
-        where usuario_id = new.usuario_id
-        and livro_id = new.livro_id
-        and status_emprestimo != 'devolvido';
-
-        if existing_count > 0 then
-            signal sqlstate '45000'
-            set message_text = 'Empréstimo duplicado: usuário já possui empréstimo ativo para este livro';
+        if new.data_devolucao_real is not null then
+            set new.status_emprestimo = 'devolvido';
+        elseif new.data_devolucao_prevista < curdate() then
+            set new.status_emprestimo = 'atrasado';
+        else
+            set new.status_emprestimo = 'pendente';
         end if;
     end;
     """)
+
+    #4
+    cursor.execute("""
+    create trigger trg_gerar_multa_atraso
+    after update on emprestimos
+    for each row
+    begin
+        declare dias_atraso int;
+        declare valor_multa decimal(10,2);
+
+        if new.data_devolucao_real is not null
+           and new.data_devolucao_real > new.data_devolucao_prevista then
+
+            set dias_atraso = datediff(
+                new.data_devolucao_real,
+                new.data_devolucao_prevista
+            );
+
+            set valor_multa = dias_atraso * 2.00;
+
+            update usuarios
+            set multa_atual = multa_atual + valor_multa
+            where id_usuario = new.usuario_id;
+        end if;
+    end;
+    """)
+
+    #5
+    cursor.execute("""
+    create trigger trg_set_data_inscricao_usuario
+    before insert on usuarios
+    for each row
+    begin
+        if new.data_inscricao is null then
+            set new.data_inscricao = curdate();
+        end if;
+    end;
+    """)
+
+
+
 
     conn.commit()
     cursor.close()
