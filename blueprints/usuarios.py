@@ -103,6 +103,8 @@ def editar_usuario(id_usuario):
 
     cur.execute("SELECT * FROM Usuarios WHERE ID_usuario=%s", (id_usuario,))
     usuario = cur.fetchone()
+    if usuario and 'Data_inscricao' in usuario and usuario['Data_inscricao']:
+        usuario['Data_inscricao'] = usuario['Data_inscricao'].strftime('%Y-%m-%d')
     cur.close()
     conn.close()
     return render_template("usuarios_form.html", usuario=usuario)
