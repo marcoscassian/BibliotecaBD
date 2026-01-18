@@ -3,6 +3,25 @@
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='geral_form.css') }}">
+<style>
+    .info-usuario, .info-livro {
+        font-size: 0.85em;
+        margin-top: 4px;
+    }
+    .status-ativo { color: #28a745; }
+    .status-inativo { color: #dc3545; }
+    .estoque-disponivel { color: #28a745; }
+    .estoque-indisponivel { color: #dc3545; }
+    .aviso-trigger {
+        background-color: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 15px;
+        font-size: 0.9em;
+    }
+    .aviso-trigger strong { color: #856404; }
+</style>
 {% endblock %}
 
 {% block js %}
@@ -14,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     dataEmprestimo.addEventListener('change', function() {
         if (this.value) {
             const date = new Date(this.value);
-            date.setMonth(date.getMonth() + 1);
+            date.setDate(date.getDate() + 7); // 7 dias conforme trigger
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
@@ -23,6 +42,46 @@ document.addEventListener('DOMContentLoaded', function() {
             dataPrevista.value = '';
         }
     });
+
+    // Atualizar informações do usuário selecionado
+    const selectUsuario = document.querySelector('select[name="Usuario_id"]');
+    const infoUsuario = document.getElementById('info-usuario');
+
+    selectUsuario.addEventListener('change', function() {
+        const option = this.options[this.selectedIndex];
+        if (option.value) {
+            const status = option.dataset.status;
+            if (status === 'inativo') {
+                infoUsuario.innerHTML = '<span class="status-inativo">⚠️ Usuário INATIVO - não pode realizar empréstimos</span>';
+            } else {
+                infoUsuario.innerHTML = '<span class="status-ativo">✓ Usuário ativo</span>';
+            }
+        } else {
+            infoUsuario.innerHTML = '';
+        }
+    });
+
+    // Atualizar informações do livro selecionado
+    const selectLivro = document.querySelector('select[name="Livro_id"]');
+    const infoLivro = document.getElementById('info-livro');
+
+    selectLivro.addEventListener('change', function() {
+        const option = this.options[this.selectedIndex];
+        if (option.value) {
+            const qtd = parseInt(option.dataset.quantidade) || 0;
+            if (qtd <= 0) {
+                infoLivro.innerHTML = '<span class="estoque-indisponivel">⚠️ Sem estoque disponível</span>';
+            } else {
+                infoLivro.innerHTML = '<span class="estoque-disponivel">✓ ' + qtd + ' unidade(s) disponível(is)</span>';
+            }
+        } else {
+            infoLivro.innerHTML = '';
+        }
+    });
+
+    // Disparar eventos para mostrar info inicial se editando
+    if (selectUsuario.value) selectUsuario.dispatchEvent(new Event('change'));
+    if (selectLivro.value) selectLivro.dispatchEvent(new Event('change'));
 });
 </script>
 {% endblock %}
@@ -31,17 +90,31 @@ document.addEventListener('DOMContentLoaded', function() {
 <form method="post" class="formulario">
     <h2>{{ 'Editar Empréstimo' if emprestimo else 'Novo Empréstimo' }}</h2>
 
+    {% if not emprestimo %}
+    <div class="aviso-trigger">
+        <strong>ℹ️ Informações importantes:</strong>
+        <ul style="margin: 5px 0 0 20px;">
+            <li>Usuários inativos não podem realizar empréstimos</li>
+            <li>Livros sem estoque não podem ser emprestados</li>
+            <li>Não é permitido empréstimo duplicado do mesmo livro</li>
+            <li>Data de empréstimo e devolução prevista são preenchidas automaticamente</li>
+        </ul>
+    </div>
+    {% endif %}
+
     <div class="grupo-campo">
         <label>Usuário</label>
         <select name="Usuario_id" required>
             <option value="">-- Selecione --</option>
             {% for u in usuarios %}
             <option value="{{ u.ID_usuario }}"
+                data-status="{{ u.Status }}"
                 {% if emprestimo and emprestimo.usuario_id == u.ID_usuario %}selected{% endif %}>
-                {{ u.Nome_usuario }}
+                {{ u.Nome_usuario }} {% if u.Status == 'inativo' %}(INATIVO){% endif %}
             </option>
             {% endfor %}
         </select>
+        <div id="info-usuario" class="info-usuario"></div>
     </div>
 
     <div class="grupo-campo">
@@ -50,39 +123,46 @@ document.addEventListener('DOMContentLoaded', function() {
             <option value="">-- Selecione --</option>
             {% for l in livros %}
             <option value="{{ l.ID_livro }}"
+                data-quantidade="{{ l.Quantidade_disponivel }}"
                 {% if emprestimo and emprestimo.livro_id == l.ID_livro %}selected{% endif %}>
-                {{ l.Titulo }}
+                {{ l.Titulo }} ({{ l.Quantidade_disponivel }} disponível)
             </option>
             {% endfor %}
         </select>
+        <div id="info-livro" class="info-livro"></div>
     </div>
 
     <div class="grupo-campo">
         <label>Data de Empréstimo</label>
         <input type="date" name="Data_emprestimo"
-            value="{{ emprestimo.data_emprestimo if emprestimo else '' }}">
+            value="{{ emprestimo.data_emprestimo if emprestimo else '' }}"
+            placeholder="Preenchido automaticamente se vazio">
+        <small style="color: #666;">Deixe vazio para usar a data atual</small>
     </div>
 
     <div class="grupo-campo">
         <label>Data de Devolução Prevista</label>
         <input type="date" name="Data_devolucao_prevista" readonly
             value="{{ emprestimo.data_devolucao_prevista if emprestimo else '' }}">
+        <small style="color: #666;">Calculada automaticamente (7 dias após empréstimo)</small>
     </div>
 
     <div class="grupo-campo">
         <label>Data de Devolução Real</label>
         <input type="date" name="Data_devolucao_real"
                value="{{ emprestimo.data_devolucao_real if emprestimo and emprestimo.data_devolucao_real else '' }}">
+        <small style="color: #666;">Preencha ao devolver o livro. Multa de R$ 2,00/dia em caso de atraso.</small>
     </div>
 
     <div class="grupo-campo">
         <label>Status</label>
         <select name="Status_emprestimo" required>
-            {% set status_atual = emprestimo.Status_emprestimo if emprestimo else 'pendente' %}
+            {% set status_atual = emprestimo.status_emprestimo if emprestimo else 'pendente' %}
             <option value="pendente" {% if status_atual == 'pendente' %}selected{% endif %}>Pendente</option>
             <option value="devolvido" {% if status_atual == 'devolvido' %}selected{% endif %}>Devolvido</option>
             <option value="atrasado" {% if status_atual == 'atrasado' %}selected{% endif %}>Atrasado</option>
         </select>
+        <small style="color: #666;">Status atualizado automaticamente pelo sistema</small>
     </div>
 
     <div class="botoes-formulario">
