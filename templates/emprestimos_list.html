@@ -23,16 +23,38 @@
     </thead>
     <tbody>
     {% for e in emprestimos %}
-        <tr>
+        <tr class="{{ 'emprestimo-atrasado' if e.Status_emprestimo == 'atrasado' else ('emprestimo-devolvido' if e.Status_emprestimo == 'devolvido' else '') }}">
             <td>{{ e.ID_emprestimo }}</td>
-            <td>{{ e.Nome_usuario }}</td>
+            <td>
+                {{ e.Nome_usuario }}
+                {% if e.Usuario_status == 'inativo' %}
+                    <span class="badge badge-inativo-small">Inativo</span>
+                {% endif %}
+            </td>
             <td>{{ e.Titulo }}</td>
             <td>{{ e.Data_emprestimo or '-' }}</td>
             <td>{{ e.Data_devolucao_prevista or '-' }}</td>
             <td>{{ e.Data_devolucao_real or '-' }}</td>
-            <td>{{ e.Status_emprestimo }}</td>
             <td>
+                {% if e.Status_emprestimo == 'pendente' %}
+                    <span class="badge badge-pendente">Pendente</span>
+                {% elif e.Status_emprestimo == 'devolvido' %}
+                    <span class="badge badge-devolvido">Devolvido</span>
+                {% elif e.Status_emprestimo == 'atrasado' %}
+                    <span class="badge badge-atrasado">Atrasado</span>
+                {% else %}
+                    {{ e.Status_emprestimo }}
+                {% endif %}
+            </td>
+            <td>
+                {% if e.Status_emprestimo != 'devolvido' %}
+                <form action="{{ url_for('emprestimos.devolver_emprestimo', id_emprestimo=e.ID_emprestimo) }}" method="post" style="display:inline-block" onsubmit="return confirm('Confirmar devolução deste livro?');">
+                    <button class="botao pequeno sucesso" title="Registrar devolução">Devolver</button>
+                </form>
+                {% endif %}
+
                 <a href="{{ url_for('emprestimos.editar_emprestimo', id_emprestimo=e.ID_emprestimo) }}" class="botao pequeno secundario">Editar</a>
+
                 <form action="{{ url_for('emprestimos.excluir_emprestimo', id_emprestimo=e.ID_emprestimo) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este empréstimo?');" style="display:inline-block">
                     <button class="botao pequeno perigo">Excluir</button>
                 </form>
@@ -41,4 +63,47 @@
     {% endfor %}
     </tbody>
 </table>
+
+<style>
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+    }
+    .badge-pendente {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    .badge-devolvido {
+        background-color: #28a745;
+        color: white;
+    }
+    .badge-atrasado {
+        background-color: #dc3545;
+        color: white;
+    }
+    .badge-inativo-small {
+        background-color: #6c757d;
+        color: white;
+        font-size: 0.7em;
+        padding: 2px 4px;
+        border-radius: 3px;
+        margin-left: 4px;
+    }
+    .emprestimo-atrasado {
+        background-color: #fff5f5;
+    }
+    .emprestimo-devolvido {
+        background-color: #f0fff4;
+        opacity: 0.8;
+    }
+    .botao.sucesso {
+        background-color: #28a745;
+        color: white;
+    }
+    .botao.sucesso:hover {
+        background-color: #218838;
+    }
+</style>
 {% endblock %}
