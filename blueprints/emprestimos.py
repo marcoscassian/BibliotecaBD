@@ -143,13 +143,11 @@ def editar_emprestimo(id_emprestimo):
     emprestimo = cur.fetchone()
 
     for campo in ['Data_emprestimo', 'Data_devolucao_prevista', 'Data_devolucao_real']:
-        # Verificar se a chave existe (case insensitive)
-        campo_lower = campo.lower()
-        if campo_lower in emprestimo:
-            if emprestimo[campo_lower]:
-                emprestimo[campo_lower] = emprestimo[campo_lower].strftime('%Y-%m-%d')
+        if campo in emprestimo:
+            if emprestimo[campo]:
+                emprestimo[campo] = emprestimo[campo].strftime('%Y-%m-%d')
             else:
-                emprestimo[campo_lower] = ''
+                emprestimo[campo] = ''
 
     cur.close()
     conn.close()
