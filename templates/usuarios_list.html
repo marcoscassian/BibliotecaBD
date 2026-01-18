@@ -16,21 +16,40 @@
             <th>Email</th>
             <th>Telefone</th>
             <th>Data inscrição</th>
+            <th>Status</th>
             <th>Multa atual</th>
             <th>Ações</th>
         </tr>
     </thead>
     <tbody>
     {% for u in usuarios %}
-        <tr>
+        <tr class="{{ 'usuario-inativo' if u.Status == 'inativo' else '' }}">
             <td>{{ u.ID_usuario }}</td>
             <td>{{ u.Nome_usuario }}</td>
             <td>{{ u.Email or '-' }}</td>
             <td>{{ u.Numero_telefone or '-' }}</td>
             <td>{{ u.Data_inscricao or '-' }}</td>
-            <td>{{ u.Multa_atual or '0.00' }}</td>
+            <td>
+                {% if u.Status == 'ativo' %}
+                    <span class="badge badge-ativo">Ativo</span>
+                {% else %}
+                    <span class="badge badge-inativo">Inativo</span>
+                {% endif %}
+            </td>
+            <td>R$ {{ "%.2f"|format(u.Multa_atual|float) if u.Multa_atual else '0.00' }}</td>
             <td>
                 <a href="{{ url_for('usuarios.editar_usuario', id_usuario=u.ID_usuario) }}" class="botao pequeno secundario">Editar</a>
+
+                {% if u.Status == 'ativo' %}
+                <form action="{{ url_for('usuarios.inativar_usuario', id_usuario=u.ID_usuario) }}" method="post" style="display:inline-block" onsubmit="return confirm('Tem certeza que deseja inativar este usuário?');">
+                    <button class="botao pequeno aviso" title="Inativar usuário">Inativar</button>
+                </form>
+                {% else %}
+                <form action="{{ url_for('usuarios.ativar_usuario', id_usuario=u.ID_usuario) }}" method="post" style="display:inline-block">
+                    <button class="botao pequeno sucesso" title="Ativar usuário">Ativar</button>
+                </form>
+                {% endif %}
+
                 <form action="{{ url_for('usuarios.excluir_usuario', id_usuario=u.ID_usuario) }}" method="post" style="display:inline-block" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
                     <button class="botao pequeno perigo">Excluir</button>
                 </form>
@@ -39,4 +58,39 @@
     {% endfor %}
     </tbody>
 </table>
+
+<style>
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+    }
+    .badge-ativo {
+        background-color: #28a745;
+        color: white;
+    }
+    .badge-inativo {
+        background-color: #dc3545;
+        color: white;
+    }
+    .usuario-inativo {
+        opacity: 0.7;
+        background-color: #f8f9fa;
+    }
+    .botao.aviso {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    .botao.aviso:hover {
+        background-color: #e0a800;
+    }
+    .botao.sucesso {
+        background-color: #28a745;
+        color: white;
+    }
+    .botao.sucesso:hover {
+        background-color: #218838;
+    }
+</style>
 {% endblock %}
