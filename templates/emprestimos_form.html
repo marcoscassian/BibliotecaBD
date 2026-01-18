@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {% for u in usuarios %}
             <option value="{{ u.ID_usuario }}"
                 data-status="{{ u.Status }}"
-                {% if emprestimo and emprestimo.usuario_id == u.ID_usuario %}selected{% endif %}>
+                {% if emprestimo and emprestimo['Usuario_id'] == u.ID_usuario %}selected{% endif %}>
                 {{ u.Nome_usuario }} {% if u.Status == 'inativo' %}(INATIVO){% endif %}
             </option>
             {% endfor %}
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {% for l in livros %}
             <option value="{{ l.ID_livro }}"
                 data-quantidade="{{ l.Quantidade_disponivel }}"
-                {% if emprestimo and emprestimo.livro_id == l.ID_livro %}selected{% endif %}>
+                {% if emprestimo and emprestimo['Livro_id'] == l.ID_livro %}selected{% endif %}>
                 {{ l.Titulo }} ({{ l.Quantidade_disponivel }} disponível)
             </option>
             {% endfor %}
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="grupo-campo">
         <label>Data de Empréstimo</label>
         <input type="date" name="Data_emprestimo"
-            value="{{ emprestimo.data_emprestimo if emprestimo else '' }}"
+            value="{{ emprestimo.Data_emprestimo if emprestimo else '' }}"
             placeholder="Preenchido automaticamente se vazio">
         <small style="color: #666;">Deixe vazio para usar a data atual</small>
     </div>
@@ -143,21 +143,21 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="grupo-campo">
         <label>Data de Devolução Prevista</label>
         <input type="date" name="Data_devolucao_prevista" readonly
-            value="{{ emprestimo.data_devolucao_prevista if emprestimo else '' }}">
+            value="{{ emprestimo.Data_devolucao_prevista if emprestimo else '' }}">
         <small style="color: #666;">Calculada automaticamente (7 dias após empréstimo)</small>
     </div>
 
     <div class="grupo-campo">
         <label>Data de Devolução Real</label>
         <input type="date" name="Data_devolucao_real"
-               value="{{ emprestimo.data_devolucao_real if emprestimo and emprestimo.data_devolucao_real else '' }}">
+               value="{{ emprestimo.Data_devolucao_real if emprestimo and emprestimo.Data_devolucao_real else '' }}">
         <small style="color: #666;">Preencha ao devolver o livro. Multa de R$ 2,00/dia em caso de atraso.</small>
     </div>
 
     <div class="grupo-campo">
         <label>Status</label>
         <select name="Status_emprestimo" required>
-            {% set status_atual = emprestimo.status_emprestimo if emprestimo else 'pendente' %}
+            {% set status_atual = emprestimo.Status_emprestimo if emprestimo else 'pendente' %}
             <option value="pendente" {% if status_atual == 'pendente' %}selected{% endif %}>Pendente</option>
             <option value="devolvido" {% if status_atual == 'devolvido' %}selected{% endif %}>Devolvido</option>
             <option value="atrasado" {% if status_atual == 'atrasado' %}selected{% endif %}>Atrasado</option>
