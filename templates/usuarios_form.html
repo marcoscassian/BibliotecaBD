@@ -16,7 +16,7 @@
 
     <div class="grupo-campo">
         <label>Email</label>
-        <input type="email" name="Email"
+        <input type="email" name="Email" required
                value="{{ usuario.Email if usuario else '' }}">
     </div>
 
@@ -29,13 +29,24 @@
     <div class="grupo-campo">
         <label>Data de inscrição</label>
         <input type="date" name="Data_inscricao"
-               value="{{ usuario.Data_inscricao if usuario and usuario.Data_inscricao else '' }}">
+               value="{{ usuario.Data_inscricao if usuario and usuario.Data_inscricao else '' }}"
+               placeholder="Preenchido automaticamente se vazio">
     </div>
 
     <div class="grupo-campo">
-        <label>Multa atual</label>
+        <label>Status</label>
+        <select name="Status">
+            <option value="ativo" {% if usuario and usuario.Status == 'ativo' %}selected{% elif not usuario %}selected{% endif %}>Ativo</option>
+            <option value="inativo" {% if usuario and usuario.Status == 'inativo' %}selected{% endif %}>Inativo</option>
+        </select>
+        <small style="color: #666; font-size: 0.85em;">Usuários inativos não podem realizar empréstimos</small>
+    </div>
+
+    <div class="grupo-campo">
+        <label>Multa atual (R$)</label>
         <input type="number" step="0.01" name="Multa_atual"
                value="{{ usuario.Multa_atual if usuario else '0.00' }}">
+        <small style="color: #666; font-size: 0.85em;">Multa calculada automaticamente em caso de atraso (R$ 2,00/dia)</small>
     </div>
 
     <div class="botoes-formulario">
