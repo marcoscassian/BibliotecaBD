@@ -1,7 +1,7 @@
-
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from db import get_connection
-from mysql.connector import IntegrityError
+import mysql.connector
+
 livros_bp = Blueprint("livros", __name__, url_prefix="/livros")
 
 @livros_bp.route("/")
@@ -9,14 +9,14 @@ def listar_livros():
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
     sql = (
-        "select L.ID_livro, L.Titulo, L.ISBN, L.Ano_publicacao, "
+        "SELECT L.ID_livro, L.Titulo, L.ISBN, L.Ano_publicacao, "
         "L.Quantidade_disponivel, "
         "A.Nome_autor, G.Nome_genero, E.Nome_editora "
-        "from Livros L "
-        "left join Autores A ON L.Autor_id = A.ID_autor "
-        "left join Generos G ON L.Genero_id = G.ID_genero "
-        "left join Editoras E ON L.Editora_id = E.ID_editora "
-        "order by L.ID_livro"
+        "FROM Livros L "
+        "LEFT JOIN Autores A ON L.Autor_id = A.ID_autor "
+        "LEFT JOIN Generos G ON L.Genero_id = G.ID_genero "
+        "LEFT JOIN Editoras E ON L.Editora_id = E.ID_editora "
+        "ORDER BY L.ID_livro"
     )
     cur.execute(sql)
     livros = cur.fetchall()
@@ -26,11 +26,11 @@ def listar_livros():
 
 def carregar_relacionamentos(conn):
     cur = conn.cursor(dictionary=True)
-    cur.execute("select ID_autor, Nome_autor from Autores order by Nome_autor")
+    cur.execute("SELECT ID_autor, Nome_autor FROM Autores ORDER BY Nome_autor")
     autores = cur.fetchall()
-    cur.execute("select ID_genero, Nome_genero from Generos order by Nome_genero")
+    cur.execute("SELECT ID_genero, Nome_genero FROM Generos ORDER BY Nome_genero")
     generos = cur.fetchall()
-    cur.execute("select ID_editora, Nome_editora from Editoras order by Nome_editora")
+    cur.execute("SELECT ID_editora, Nome_editora FROM Editoras ORDER BY Nome_editora")
     editoras = cur.fetchall()
     cur.close()
     return autores, generos, editoras
@@ -50,19 +50,27 @@ def novo_livro():
         quantidade = request.form.get("Quantidade_disponivel") or 0
         resumo = request.form.get("Resumo")
 
-        sql = (
-            "INSERT INTO Livros "
-            "(Titulo, Autor_id, ISBN, Ano_publicacao, Genero_id, Editora_id, "
-            "Quantidade_disponivel, Resumo) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-        )
-        cur = conn.cursor()
-        cur.execute(sql, (titulo, autor_id, isbn, ano, genero_id, editora_id, quantidade, resumo))
-        conn.commit()
-        cur.close()
-        conn.close()
-        flash("Livro cadastrado com sucesso!", "success")
-        return redirect(url_for("livros.listar_livros"))
+        try:
+            sql = (
+                "INSERT INTO Livros "
+                "(Titulo, Autor_id, ISBN, Ano_publicacao, Genero_id, Editora_id, "
+                "Quantidade_disponivel, Resumo) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            )
+            cur = conn.cursor()
+            cur.execute(sql, (titulo, autor_id, isbn, ano, genero_id, editora_id, quantidade, resumo))
+            conn.commit()
+            flash("Livro cadastrado com sucesso!", "success")
+            return redirect(url_for("livros.listar_livros"))
+
+        except mysql.connector.Error as err:
+            conn.rollback()
+            flash(f"Erro ao cadastrar livro: {err}", "danger")
+            return redirect(url_for("livros.novo_livro"))
+
+        finally:
+            cur.close()
+            conn.close()
 
     conn.close()
     return render_template(
@@ -89,24 +97,32 @@ def editar_livro(id_livro):
         quantidade = request.form.get("Quantidade_disponivel") or 0
         resumo = request.form.get("Resumo")
 
-        sql = (
-            "UPDATE Livros SET Titulo=%s, Autor_id=%s, ISBN=%s, Ano_publicacao=%s, "
-            "Genero_id=%s, Editora_id=%s, Quantidade_disponivel=%s, Resumo=%s "
-            "where ID_livro=%s"
-        )
-        cur2 = conn.cursor()
-        cur2.execute(
-            sql,
-            (titulo, autor_id, isbn, ano, genero_id, editora_id, quantidade, resumo, id_livro),
-        )
-        conn.commit()
-        cur2.close()
-        cur.close()
-        conn.close()
-        flash("Livro atualizado com sucesso!", "success")
-        return redirect(url_for("livros.listar_livros"))
+        try:
+            sql = (
+                "UPDATE Livros SET Titulo=%s, Autor_id=%s, ISBN=%s, Ano_publicacao=%s, "
+                "Genero_id=%s, Editora_id=%s, Quantidade_disponivel=%s, Resumo=%s "
+                "WHERE ID_livro=%s"
+            )
+            cur2 = conn.cursor()
+            cur2.execute(
+                sql,
+                (titulo, autor_id, isbn, ano, genero_id, editora_id, quantidade, resumo, id_livro),
+            )
+            conn.commit()
+            cur2.close()
+            flash("Livro atualizado com sucesso!", "success")
+            return redirect(url_for("livros.listar_livros"))
 
-    cur.execute("select * from Livros where ID_livro=%s", (id_livro,))
+        except mysql.connector.Error as err:
+            conn.rollback()
+            flash(f"Erro ao atualizar livro: {err}", "danger")
+            return redirect(url_for("livros.editar_livro", id_livro=id_livro))
+
+        finally:
+            cur.close()
+            conn.close()
+
+    cur.execute("SELECT * FROM Livros WHERE ID_livro=%s", (id_livro,))
     livro = cur.fetchone()
     cur.close()
     conn.close()
@@ -124,17 +140,22 @@ def excluir_livro(id_livro):
     cur = conn.cursor(dictionary=True)
 
     try:
-        # tentaa excluir o livro diretamente
+        # O trigger trg_log_livro_delete vai registrar a exclusão no log de auditoria
         cur.execute("DELETE FROM Livros WHERE ID_livro = %s", (id_livro,))
         conn.commit()
         flash("Livro excluído com sucesso!", "success")
 
-    except IntegrityError:
+    except mysql.connector.Error as err:
         conn.rollback()
-        flash("Não é possível excluir este livro porque existem empréstimos relacionados a ele.", "warning")
+        error_msg = str(err.msg).lower() if hasattr(err, 'msg') else str(err).lower()
+
+        if "foreign key" in error_msg or "constraint" in error_msg:
+            flash("Não é possível excluir este livro porque existem empréstimos relacionados a ele.", "warning")
+        else:
+            flash(f"Erro ao excluir livro: {err}", "danger")
 
     finally:
-        # fecha tudo independbentemente do resultado
         cur.close()
         conn.close()
+
     return redirect(url_for("livros.listar_livros"))
