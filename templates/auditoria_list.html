@@ -4,34 +4,104 @@
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='geral_list.css') }}">
+<style>
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+    }
+    .badge-insert {
+        background-color: #28a745;
+        color: white;
+    }
+    .badge-update {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    .badge-delete {
+        background-color: #dc3545;
+        color: white;
+    }
+    .tabela-auditoria {
+        font-size: 0.95em;
+    }
+    .tabela-auditoria td {
+        vertical-align: middle;
+    }
+    .info-triggers {
+        background-color: #e7f3ff;
+        border: 1px solid #b6d4fe;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .info-triggers h4 {
+        margin: 0 0 10px 0;
+        color: #0c5460;
+    }
+    .info-triggers ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    .info-triggers li {
+        margin-bottom: 5px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="topo">
-    <h2>Auditoria do Sistema</h2>
+    <h2>📋 Auditoria do Sistema</h2>
 </div>
 
-<table class="tabela">
+<div class="info-triggers">
+    <h4>ℹ️ Logs registrados automaticamente pelos triggers:</h4>
+    <ul>
+        <li><strong>Usuários:</strong> Cadastro e alteração de dados</li>
+        <li><strong>Empréstimos:</strong> Novos empréstimos e devoluções</li>
+        <li><strong>Livros:</strong> Exclusão de livros do sistema</li>
+    </ul>
+</div>
+
+<table class="tabela tabela-auditoria">
     <thead>
         <tr>
-            <th>Data</th>
+            <th>ID</th>
+            <th>Data/Hora</th>
             <th>Tabela</th>
             <th>Operação</th>
-            <th>Usuário</th>
+            <th>Usuário Relacionado</th>
             <th>Descrição</th>
         </tr>
     </thead>
     <tbody>
         {% for log in logs %}
         <tr>
-            <td>{{ log.data_operacao }}</td>
-            <td>{{ log.tabela_afetada }}</td>
-            <td>{{ log.operacao }}</td>
+            <td>{{ log.id_log }}</td>
+            <td>{{ log.data_operacao.strftime('%d/%m/%Y %H:%M:%S') if log.data_operacao else '-' }}</td>
+            <td>{{ log.tabela_afetada | capitalize }}</td>
+            <td>
+                {% if log.operacao == 'INSERT' %}
+                    <span class="badge badge-insert">INSERT</span>
+                {% elif log.operacao == 'UPDATE' %}
+                    <span class="badge badge-update">UPDATE</span>
+                {% elif log.operacao == 'DELETE' %}
+                    <span class="badge badge-delete">DELETE</span>
+                {% else %}
+                    {{ log.operacao }}
+                {% endif %}
+            </td>
             <td>{{ log.nome_usuario or "—" }}</td>
             <td>{{ log.descricao }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                Nenhum log de auditoria registrado ainda.
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% endblock %}
-
