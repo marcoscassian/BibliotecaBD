@@ -1,7 +1,7 @@
-
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from db import get_connection
 import mysql.connector
+
 emprestimos_bp = Blueprint("emprestimos", __name__, url_prefix="/emprestimos")
 
 @emprestimos_bp.route("/")
@@ -9,10 +9,10 @@ def listar_emprestimos():
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
     sql = (
-        "select E.ID_emprestimo, U.Nome_usuario, L.Titulo, "
+        "SELECT E.ID_emprestimo, U.Nome_usuario, U.Status as Usuario_status, L.Titulo, "
         "E.Data_emprestimo, E.Data_devolucao_prevista, "
         "E.Data_devolucao_real, E.Status_emprestimo "
-        "from Emprestimos E "
+        "FROM Emprestimos E "
         "JOIN Usuarios U ON E.Usuario_id = U.ID_usuario "
         "JOIN Livros L ON E.Livro_id = L.ID_livro "
         "ORDER BY E.ID_emprestimo DESC"
@@ -25,9 +25,10 @@ def listar_emprestimos():
 
 def carregar_usuarios_livros(conn):
     cur = conn.cursor(dictionary=True)
-    cur.execute("select ID_usuario, Nome_usuario from Usuarios ORDER BY Nome_usuario")
+    # Carregar apenas usuários ativos para empréstimos
+    cur.execute("SELECT ID_usuario, Nome_usuario, Status FROM Usuarios ORDER BY Nome_usuario")
     usuarios = cur.fetchall()
-    cur.execute("select ID_livro, Titulo from Livros ORDER BY Titulo")
+    cur.execute("SELECT ID_livro, Titulo, Quantidade_disponivel FROM Livros ORDER BY Titulo")
     livros = cur.fetchall()
     cur.close()
     return usuarios, livros
@@ -48,10 +49,10 @@ def novo_emprestimo():
         status = request.form.get("Status_emprestimo")
 
         sql = (
-            "insert into emprestimos "
-            "(usuario_id, livro_id, data_emprestimo, data_devolucao_prevista, "
-            "data_devolucao_real, status_emprestimo) "
-            "values (%s, %s, %s, %s, %s, %s)"
+            "INSERT INTO Emprestimos "
+            "(Usuario_id, Livro_id, Data_emprestimo, Data_devolucao_prevista, "
+            "Data_devolucao_real, Status_emprestimo) "
+            "VALUES (%s, %s, %s, %s, %s, %s)"
         )
 
         cur = conn.cursor()
@@ -64,14 +65,18 @@ def novo_emprestimo():
 
         except mysql.connector.Error as err:
             conn.rollback()
-            error_msg = str(err.msg).lower()
+            error_msg = str(err.msg).lower() if hasattr(err, 'msg') else str(err).lower()
             print(f"Erro capturado: {err}")
-            if "livro indisponível" in error_msg:
-                flash("Este livro não possui estoque disponível.", "danger")
+
+            # Tratamento dos erros dos triggers
+            if "inativo" in error_msg or "usuário inativo" in error_msg:
+                flash("Este usuário está inativo e não pode realizar empréstimos.", "danger")
+            elif "indisponível" in error_msg or "sem estoque" in error_msg:
+                flash("Este livro não possui estoque disponível para empréstimo.", "danger")
             elif "duplicado" in error_msg or "empréstimo ativo" in error_msg:
                 flash("Este usuário já possui um empréstimo pendente para este livro.", "danger")
             else:
-                flash("Erro ao cadastrar empréstimo.", "danger")
+                flash(f"Erro ao cadastrar empréstimo: {err}", "danger")
             return redirect(url_for("emprestimos.novo_emprestimo"))
 
         finally:
@@ -102,31 +107,49 @@ def editar_emprestimo(id_emprestimo):
         status = request.form.get("Status_emprestimo")
 
         sql = (
-            "UPDATE emprestimos SET usuario_id=%s, livro_id=%s, "
-            "data_emprestimo=%s, data_devolucao_prevista=%s, "
-            "data_devolucao_real=%s, status_emprestimo=%s "
-            "WHERE id_emprestimo=%s"
+            "UPDATE Emprestimos SET Usuario_id=%s, Livro_id=%s, "
+            "Data_emprestimo=%s, Data_devolucao_prevista=%s, "
+            "Data_devolucao_real=%s, Status_emprestimo=%s "
+            "WHERE ID_emprestimo=%s"
         )
-        cur2 = conn.cursor()
-        cur2.execute(
-            sql,
-            (usuario_id, livro_id, data_emp, data_prev, data_real, status, id_emprestimo),
-        )
-        conn.commit()
-        cur2.close()
-        cur.close()
-        conn.close()
-        flash("Empréstimo atualizado com sucesso!", "success")
-        return redirect(url_for("emprestimos.listar_emprestimos"))
 
-    cur.execute("SELECT * FROM emprestimos WHERE id_emprestimo=%s", (id_emprestimo,))
+        try:
+            cur2 = conn.cursor()
+            cur2.execute(
+                sql,
+                (usuario_id, livro_id, data_emp, data_prev, data_real, status, id_emprestimo),
+            )
+            conn.commit()
+            cur2.close()
+            flash("Empréstimo atualizado com sucesso!", "success")
+            return redirect(url_for("emprestimos.listar_emprestimos"))
+
+        except mysql.connector.Error as err:
+            conn.rollback()
+            error_msg = str(err.msg).lower() if hasattr(err, 'msg') else str(err).lower()
+
+            # Tratamento dos erros dos triggers
+            if "data de devolução" in error_msg or "anterior" in error_msg:
+                flash("A data de devolução não pode ser anterior à data do empréstimo.", "danger")
+            else:
+                flash(f"Erro ao atualizar empréstimo: {err}", "danger")
+            return redirect(url_for("emprestimos.editar_emprestimo", id_emprestimo=id_emprestimo))
+
+        finally:
+            cur.close()
+            conn.close()
+
+    cur.execute("SELECT * FROM Emprestimos WHERE ID_emprestimo=%s", (id_emprestimo,))
     emprestimo = cur.fetchone()
 
-    for campo in ['data_emprestimo', 'data_devolucao_prevista', 'data_devolucao_real']:
-        if emprestimo[campo]:
-            emprestimo[campo] = emprestimo[campo].strftime('%Y-%m-%d')
-        else:
-            emprestimo[campo] = ''
+    for campo in ['Data_emprestimo', 'Data_devolucao_prevista', 'Data_devolucao_real']:
+        # Verificar se a chave existe (case insensitive)
+        campo_lower = campo.lower()
+        if campo_lower in emprestimo:
+            if emprestimo[campo_lower]:
+                emprestimo[campo_lower] = emprestimo[campo_lower].strftime('%Y-%m-%d')
+            else:
+                emprestimo[campo_lower] = ''
 
     cur.close()
     conn.close()
@@ -138,13 +161,55 @@ def editar_emprestimo(id_emprestimo):
         livros=livros,
     )
 
+@emprestimos_bp.route("/devolver/<int:id_emprestimo>", methods=["POST"])
+def devolver_emprestimo(id_emprestimo):
+    """Registra a devolução de um empréstimo"""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        # O trigger trg_gerar_status_emprestimo vai atualizar o status automaticamente
+        # O trigger trg_retorna_estoque_livro vai devolver o livro ao estoque
+        # O trigger trg_gerar_multa_atraso vai calcular multa se houver atraso
+        cur.execute(
+            "UPDATE Emprestimos SET Data_devolucao_real = CURDATE() WHERE ID_emprestimo = %s",
+            (id_emprestimo,)
+        )
+        conn.commit()
+        flash("Devolução registrada com sucesso!", "success")
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        error_msg = str(err.msg).lower() if hasattr(err, 'msg') else str(err).lower()
+
+        if "data de devolução" in error_msg:
+            flash("Erro na data de devolução.", "danger")
+        else:
+            flash(f"Erro ao registrar devolução: {err}", "danger")
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return redirect(url_for("emprestimos.listar_emprestimos"))
+
 @emprestimos_bp.route("/excluir/<int:id_emprestimo>", methods=["POST"])
 def excluir_emprestimo(id_emprestimo):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("delete from Emprestimos where ID_emprestimo=%s", (id_emprestimo,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    flash("Empréstimo excluído com sucesso!", "success")
+
+    try:
+        # O trigger trg_inativa_usuario pode inativar o usuário se não tiver mais empréstimos
+        cur.execute("DELETE FROM Emprestimos WHERE ID_emprestimo=%s", (id_emprestimo,))
+        conn.commit()
+        flash("Empréstimo excluído com sucesso!", "success")
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        flash(f"Erro ao excluir empréstimo: {err}", "danger")
+
+    finally:
+        cur.close()
+        conn.close()
+
     return redirect(url_for("emprestimos.listar_emprestimos"))
