@@ -40,7 +40,6 @@ def criar_tabelas():
         );
     """)
 
-    # Tabela Usuarios com campo Status adicionado
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Usuarios (
             ID_usuario INT AUTO_INCREMENT PRIMARY KEY,
@@ -94,7 +93,6 @@ def criar_tabelas():
         );
     """)
 
-    # Tabela de logs de auditoria
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS logs_auditoria (
             id_log INT AUTO_INCREMENT PRIMARY KEY,
@@ -128,7 +126,7 @@ def criar_triggers():
         'trg_emprestimos_after_delete',
         'trg_autores_before_delete',
         'trg_livros_after_delete',
-        # Triggers antigos
+
         'trg_validar_estoque_livro',
         'trg_log_emprestimo',
         'trg_calcular_devolucao_prevista',
@@ -156,9 +154,6 @@ def criar_triggers():
 
     cursor.execute("DROP PROCEDURE IF EXISTS registrar_log;")
 
-    # ============================================
-    # PROCEDURE DE APOIO PARA AUDITORIA
-    # ============================================
     cursor.execute("""
         CREATE PROCEDURE registrar_log(
             p_tabela VARCHAR(50),
@@ -173,10 +168,6 @@ def criar_triggers():
             (p_tabela, p_operacao, NOW(), p_usuario, p_descricao);
         END;
     """)
-
-    # ============================================
-    # TRIGGERS PARA TABELA USUARIOS
-    # ============================================
 
     # BEFORE INSERT - Consolidado (triggers 16 e 17)
     # - Define data de inscrição automaticamente
@@ -228,9 +219,6 @@ def criar_triggers():
         END;
     """)
 
-    # ============================================
-    # TRIGGERS PARA TABELA EMPRESTIMOS
-    # ============================================
 
     # BEFORE INSERT - Consolidado (triggers 1, 2, 3, 18, 19, 20)
     # - Valida usuário ativo
@@ -425,10 +413,6 @@ def criar_triggers():
         END;
     """)
 
-    # ============================================
-    # TRIGGERS PARA TABELA AUTORES
-    # ============================================
-
     # BEFORE DELETE - Trigger 5: Bloquear exclusão de autor com livros cadastrados
     cursor.execute("""
         CREATE TRIGGER trg_autores_before_delete
@@ -447,10 +431,6 @@ def criar_triggers():
             END IF;
         END;
     """)
-
-    # ============================================
-    # TRIGGERS PARA TABELA LIVROS
-    # ============================================
 
     # AFTER DELETE - Trigger 10: Log de exclusão de livro
     cursor.execute("""
