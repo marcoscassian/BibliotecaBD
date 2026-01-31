@@ -46,7 +46,7 @@ def novo_emprestimo():
             data_emp = None
         data_prev = request.form.get("Data_devolucao_prevista") or None
         data_real = request.form.get("Data_devolucao_real") or None
-        status = request.form.get("Status_emprestimo")
+        status = request.form.get("Status_emprestimo") or 'pendente'
 
         sql = (
             "INSERT INTO Emprestimos "
@@ -104,7 +104,11 @@ def editar_emprestimo(id_emprestimo):
         data_emp = request.form.get("Data_emprestimo") or None
         data_prev = request.form.get("Data_devolucao_prevista") or None
         data_real = request.form.get("Data_devolucao_real") or None
-        status = request.form.get("Status_emprestimo")
+        # Carregar status atual do empréstimo para usar como fallback caso não seja selecionado outro
+        cur.execute("SELECT Status_emprestimo FROM Emprestimos WHERE ID_emprestimo=%s", (id_emprestimo,))
+        row = cur.fetchone()
+        current_status = row['Status_emprestimo'] if row and 'Status_emprestimo' in row else 'pendente'
+        status = request.form.get("Status_emprestimo") or current_status
 
         sql = (
             "UPDATE Emprestimos SET Usuario_id=%s, Livro_id=%s, "

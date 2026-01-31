@@ -36,7 +36,8 @@
     <div class="grupo-campo">
         <label>Status</label>
         <select name="Status">
-            <option value="ativo" {% if usuario and usuario.Status == 'ativo' %}selected{% elif not usuario %}selected{% endif %}>Ativo</option>
+            <option value="" {% if not usuario %}selected{% endif %}>Selecionar Status</option>
+            <option value="ativo" {% if usuario and usuario.Status == 'ativo' %}selected{% endif %}>Ativo</option>
             <option value="inativo" {% if usuario and usuario.Status == 'inativo' %}selected{% endif %}>Inativo</option>
         </select>
         <small style="color: #666; font-size: 0.85em;">Usuários inativos não podem realizar empréstimos</small>

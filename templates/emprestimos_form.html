@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <div class="grupo-campo">
         <label>Data de Devolução Prevista</label>
-        <input type="date" name="Data_devolucao_prevista" readonly
+        <input type="date" name="Data_devolucao_prevista"
             value="{{ emprestimo.Data_devolucao_prevista if emprestimo else '' }}">
         <small style="color: #666;">Calculada automaticamente (7 dias após empréstimo)</small>
     </div>
@@ -156,8 +156,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <div class="grupo-campo">
         <label>Status</label>
-        <select name="Status_emprestimo" required>
-            {% set status_atual = emprestimo.Status_emprestimo if emprestimo else 'pendente' %}
+        <select name="Status_emprestimo">
+            {% set status_atual = emprestimo.Status_emprestimo if emprestimo else '' %}
+            <option value="" {% if status_atual == '' %}selected{% endif %}>Selecionar Status</option>
             <option value="pendente" {% if status_atual == 'pendente' %}selected{% endif %}>Pendente</option>
             <option value="devolvido" {% if status_atual == 'devolvido' %}selected{% endif %}>Devolvido</option>
             <option value="atrasado" {% if status_atual == 'atrasado' %}selected{% endif %}>Atrasado</option>
