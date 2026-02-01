@@ -370,29 +370,29 @@ def criar_triggers():
     # TRIGGER 15
     # Bloquear empréstimo se não houver estoque disponível do livro
     cursor.execute("""
-    CREATE TRIGGER trg_val_emprestimo_usuario_ativo
+    CREATE TRIGGER trg_val_emprestimo_livro_com_estoque
     BEFORE INSERT ON Emprestimos
     FOR EACH ROW
     BEGIN
-        DECLARE v_status VARCHAR(10);
+        DECLARE v_qtd INT;
 
-        SELECT Status
-        INTO v_status
-        FROM Usuarios
-        WHERE ID_usuario = NEW.Usuario_id;
+        SELECT Quantidade_disponivel
+        INTO v_qtd
+        FROM Livros
+        WHERE ID_livro = NEW.Livro_id;
 
-        IF v_status IS NULL THEN
+        IF v_qtd IS NULL THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Usuário informado não existe.';
+                SET MESSAGE_TEXT = 'Livro informado não existe.';
         END IF;
 
-        IF v_status = 'inativo' THEN
+        IF v_qtd <= 0 THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Validação falhou: usuário inativo não pode realizar empréstimos.';
+                SET MESSAGE_TEXT = 'Validação falhou: livro sem estoque disponível.';
         END IF;
     END
     """)
-
+    
     conn.commit() 
     cursor.close() 
     conn.close() 
