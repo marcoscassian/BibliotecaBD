@@ -297,50 +297,65 @@ def criar_triggers():
     # Data de inscrição automática do usuário
     cursor.execute("""
     create trigger trg_val_usuario_data_inscricao
-    before insert ON Usuarios
+    before insert on usuarios
     for each row
-    BEGIN
-        IF NEW.Data_inscricao IS NULL THEN
-            SET NEW.Data_inscricao = CURDATE();
-        END IF;
-    END
+    begin
+        if new.data_inscricao is null then
+            signal sqlstate '45000'
+                set message_text = 'data_inscricao obrigatoria';
+        end if;
+    end
     """)
 
     #Trigger 12
     # Status inicial do usuário (se vier NULL)
     cursor.execute("""
-    create trigger trg_val_usuario_status_padrao
-    before insert ON Usuarios
+    create trigger trg_val_usuario_status
+    before insert on usuarios
     for each row
-    BEGIN
-        IF NEW.Status IS NULL THEN
-            SET NEW.Status = 'ativo';
-        END IF;
-    END
+    begin
+        if new.status is null then
+            signal sqlstate '45000'
+                set message_text = 'status do usuario obrigatorio';
+        end if;
+
+        if new.status not in ('ativo', 'inativo') then
+            signal sqlstate '45000'
+                set message_text = 'status do usuario invalido';
+        end if;
+    end
     """)
 
     # TRIGGER 13
     # Rmpréstimo: setar data_emprestimo + data_devolucao_prevista + status (tudo em 1)
     
     cursor.execute("""
-    create trigger trg_val_emprestimo_defaults
-    before insert ON Emprestimos
+    create trigger trg_val_emprestimo_dados_obrigatorios
+    before insert on emprestimos
     for each row
     begin
-        if NEW.Data_emprestimo IS null then
-            set NEW.Data_emprestimo = curdate();
+        if new.data_emprestimo is null then
+            signal sqlstate '45000'
+                set message_text = 'data_emprestimo obrigatoria';
         end if;
 
-        if NEW.Data_devolucao_prevista IS null then
-            SET NEW.Data_devolucao_prevista = DATE_ADD(NEW.Data_emprestimo, INTERVAL 7 DAY);
+        if new.data_devolucao_prevista is null then
+            signal sqlstate '45000'
+                set message_text = 'data_devolucao_prevista obrigatoria';
         end if;
 
-        if NEW.Status_emprestimo is null then
-            SET NEW.Status_emprestimo = 'pendente';
+        if new.status_emprestimo is null then
+            signal sqlstate '45000'
+                set message_text = 'status_emprestimo obrigatorio';
         end if;
-    END
-""")
 
+        if new.status_emprestimo not in ('pendente', 'devolvido', 'atrasado') then
+            signal sqlstate '45000'
+                set message_text = 'status_emprestimo invalido';
+        end if;
+    end
+    """)
+    
     #Trigger 14
     # Bloquear empréstimo se o usuário estiver inativo
     cursor.execute("""
