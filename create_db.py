@@ -196,8 +196,103 @@ def criar_triggers():
         END;
     """)
 
-    conn.commit()
-    cursor.close()
-    conn.close()
 
+    #TRIGGER 6
+    #log de cadastro de usuário
+    cursor.execute("""
+        CREATE TRIGGER log_insert_usuario
+        AFTER INSERT ON Usuarios
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO logs_auditoria
+            (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
+            VALUES
+            ('Usuarios', 'Insert', NOW(), NEW.ID_usuario,
+            CONCAT('Novo Usuário Cadastrado: ', NEW.Nome_usuario));
+        END;
+    """)
+    # TRIGGER 7
+    # log de atualizacao de nome do usuario
+    cursor.execute("""
+        CREATE TRIGGER log_update_usuario
+        AFTER UPDATE ON Usuarios
+        FOR EACH ROW
+        BEGIN
+            IF OLD.Nome_usuario != NEW.Nome_usuario THEN
+                INSERT INTO logs_auditoria
+                (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
+                VALUES
+                ('Usuarios', 'Update', NOW(), NEW.ID_usuario,
+                CONCAT(
+                    'Nome alterado de "', OLD.Nome_usuario,
+                    '" para "', NEW.Nome_usuario, '"'
+                ));
+            END IF;
+        END;
+    """)
+
+    # TRIGGER 8
+    # log de criacao de emprestimo
+    cursor.execute("""
+        CREATE TRIGGER log_insert_emprestimo
+        AFTER INSERT ON Emprestimos
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO logs_auditoria
+            (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
+            VALUES
+            ('Emprestimos', 'Insert', NOW(), NEW.Usuario_id,
+            CONCAT(
+                'Emprestimo criado  ',
+                ' | Data: ',
+                NEW.Data_emprestimo
+            ));
+        END;
+    """)
+
+    # TRIGGER 9
+    # log de atualizacao do status do emprestimo
+    cursor.execute("""
+        CREATE TRIGGER log_update_emprestimo
+        AFTER UPDATE ON Emprestimos
+        FOR EACH ROW
+        BEGIN
+            IF OLD.Status_emprestimo != NEW.Status_emprestimo THEN
+                INSERT INTO logs_auditoria
+                (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
+                VALUES
+                ('Emprestimos', 'Update', NOW(), NEW.Usuario_id,
+                CONCAT(
+                    'Status do emprestimo alterado de ',
+                    OLD.Status_emprestimo,
+                    ' para ',
+                    NEW.Status_emprestimo
+                ));
+            END IF;
+        END;
+    """)
+
+    # TRIGGER 10
+    # log de exclusao de livro
+    cursor.execute("""
+        CREATE TRIGGER log_delete_livro
+        AFTER DELETE ON Livros
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO logs_auditoria
+            (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
+            VALUES
+            ('Livros', 'Delete', NOW(), NULL,
+            CONCAT(
+                'Livro removido: ',
+                OLD.Titulo,
+                ' (ID ',
+                OLD.ID_livro,
+                ')'
+            ));
+        END;
+    """)
+    conn.commit() 
+    cursor.close() 
+    conn.close() 
     print("Triggers criados com sucesso (todas independentes)")
