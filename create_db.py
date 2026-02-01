@@ -127,9 +127,9 @@ def criar_triggers():
     # Data de inscrição automática
 
     cursor.execute("""
-        CREATE TRIGGER trg_usuario_data_inscricao
-        BEFORE INSERT ON Usuarios
-        FOR EACH ROW
+        create trigger trg_usuario_data_inscricao
+        before insert ON Usuarios
+        for each row
         BEGIN
             IF NEW.Data_inscricao IS NULL THEN
                 SET NEW.Data_inscricao = CURDATE();
@@ -141,9 +141,9 @@ def criar_triggers():
     # Status inicial do usuário
 
     cursor.execute("""
-        CREATE TRIGGER trg_usuario_status_padrao
-        BEFORE INSERT ON Usuarios
-        FOR EACH ROW
+        create trigger trg_usuario_status_padrao
+        before insert ON Usuarios
+        for each row
         BEGIN
             IF NEW.Status IS NULL THEN
                 SET NEW.Status = 'ativo';
@@ -155,9 +155,9 @@ def criar_triggers():
     # Data do empréstimo
 
     cursor.execute("""
-        CREATE TRIGGER trg_emprestimo_data
-        BEFORE INSERT ON Emprestimos
-        FOR EACH ROW
+        create trigger trg_emprestimo_data
+        before insert ON Emprestimos
+        for each row
         BEGIN
             IF NEW.Data_emprestimo IS NULL THEN
                 SET NEW.Data_emprestimo = CURDATE();
@@ -169,9 +169,9 @@ def criar_triggers():
     # Data prevista de devolução
 
     cursor.execute("""
-        CREATE TRIGGER trg_emprestimo_data_prevista
-        BEFORE INSERT ON Emprestimos
-        FOR EACH ROW
+        create trigger trg_emprestimo_data_prevista
+        before insert ON Emprestimos
+        for each row
         BEGIN
             IF NEW.Data_devolucao_prevista IS NULL THEN
                 SET NEW.Data_devolucao_prevista = DATE_ADD(
@@ -186,9 +186,9 @@ def criar_triggers():
     # Status inicial do empréstimo
 
     cursor.execute("""
-        CREATE TRIGGER trg_emprestimo_status_padrao
-        BEFORE INSERT ON Emprestimos
-        FOR EACH ROW
+        create trigger trg_emprestimo_status_padrao
+        before insert ON Emprestimos
+        for each row
         BEGIN
             IF NEW.Status_emprestimo IS NULL THEN
                 SET NEW.Status_emprestimo = 'pendente';
@@ -200,9 +200,9 @@ def criar_triggers():
     #TRIGGER 6
     #log de cadastro de usuário
     cursor.execute("""
-        CREATE TRIGGER log_insert_usuario
+        create trigger log_insert_usuario
         AFTER INSERT ON Usuarios
-        FOR EACH ROW
+        for each row
         BEGIN
             INSERT INTO logs_auditoria
             (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
@@ -214,9 +214,9 @@ def criar_triggers():
     # TRIGGER 7
     # log de atualizacao de nome do usuario
     cursor.execute("""
-        CREATE TRIGGER log_update_usuario
+        create trigger log_update_usuario
         AFTER UPDATE ON Usuarios
-        FOR EACH ROW
+        for each row
         BEGIN
             IF OLD.Nome_usuario != NEW.Nome_usuario THEN
                 INSERT INTO logs_auditoria
@@ -234,9 +234,9 @@ def criar_triggers():
     # TRIGGER 8
     # log de criacao de emprestimo
     cursor.execute("""
-        CREATE TRIGGER log_insert_emprestimo
+        create trigger log_insert_emprestimo
         AFTER INSERT ON Emprestimos
-        FOR EACH ROW
+        for each row
         BEGIN
             INSERT INTO logs_auditoria
             (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
@@ -253,9 +253,9 @@ def criar_triggers():
     # TRIGGER 9
     # log de atualizacao do status do emprestimo
     cursor.execute("""
-        CREATE TRIGGER log_update_emprestimo
+        create trigger log_update_emprestimo
         AFTER UPDATE ON Emprestimos
-        FOR EACH ROW
+        for each row
         BEGIN
             IF OLD.Status_emprestimo != NEW.Status_emprestimo THEN
                 INSERT INTO logs_auditoria
@@ -275,9 +275,9 @@ def criar_triggers():
     # TRIGGER 10
     # log de exclusao de livro
     cursor.execute("""
-        CREATE TRIGGER log_delete_livro
+        create trigger log_delete_livro
         AFTER DELETE ON Livros
-        FOR EACH ROW
+        for each row
         BEGIN
             INSERT INTO logs_auditoria
             (tabela_afetada, operacao, data_operacao, usuario_afetado, descricao)
@@ -292,6 +292,107 @@ def criar_triggers():
             ));
         END;
     """)
+
+    # Trigger 11
+    # Data de inscrição automática do usuário
+    cursor.execute("""
+    create trigger trg_val_usuario_data_inscricao
+    before insert ON Usuarios
+    for each row
+    BEGIN
+        IF NEW.Data_inscricao IS NULL THEN
+            SET NEW.Data_inscricao = CURDATE();
+        END IF;
+    END
+    """)
+
+    #Trigger 12
+    # Status inicial do usuário (se vier NULL)
+    cursor.execute("""
+    create trigger trg_val_usuario_status_padrao
+    before insert ON Usuarios
+    for each row
+    BEGIN
+        IF NEW.Status IS NULL THEN
+            SET NEW.Status = 'ativo';
+        END IF;
+    END
+    """)
+
+    # TRIGGER 13
+    # Rmpréstimo: setar data_emprestimo + data_devolucao_prevista + status (tudo em 1)
+    
+    cursor.execute("""
+    create trigger trg_val_emprestimo_defaults
+    before insert ON Emprestimos
+    for each row
+    begin
+        if NEW.Data_emprestimo IS null then
+            set NEW.Data_emprestimo = curdate();
+        end if;
+
+        if NEW.Data_devolucao_prevista IS null then
+            SET NEW.Data_devolucao_prevista = DATE_ADD(NEW.Data_emprestimo, INTERVAL 7 DAY);
+        end if;
+
+        if NEW.Status_emprestimo is null then
+            SET NEW.Status_emprestimo = 'pendente';
+        end if;
+    END
+""")
+
+    #Trigger 14
+    # Bloquear empréstimo se o usuário estiver inativo
+    cursor.execute("""
+    create trigger trg_val_emprestimo_usuario_ativo
+    before insert ON Emprestimos
+    for each row
+    begin
+        DECLARE v_status VARCHAR(10);
+
+        SELECT Status
+        INTO v_status
+        FROM Usuarios
+        WHERE ID_usuario = NEW.Usuario_id;
+
+        IF v_status IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Usuário informado não existe.';
+        END IF;
+
+        IF v_status = 'inativo' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Validação falhou: usuário inativo não pode realizar empréstimos.';
+        END IF;
+    END
+    """)
+    
+    # TRIGGER 15
+    # Bloquear empréstimo se não houver estoque disponível do livro
+    cursor.execute("""
+    CREATE TRIGGER trg_val_emprestimo_usuario_ativo
+    BEFORE INSERT ON Emprestimos
+    FOR EACH ROW
+    BEGIN
+        DECLARE v_status VARCHAR(10);
+
+        SELECT Status
+        INTO v_status
+        FROM Usuarios
+        WHERE ID_usuario = NEW.Usuario_id;
+
+        IF v_status IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Usuário informado não existe.';
+        END IF;
+
+        IF v_status = 'inativo' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Validação falhou: usuário inativo não pode realizar empréstimos.';
+        END IF;
+    END
+    """)
+
     conn.commit() 
     cursor.close() 
     conn.close() 
