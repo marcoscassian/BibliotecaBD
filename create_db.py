@@ -1,4 +1,5 @@
 from db import get_connection, criar_banco
+from seed import inserir_dados_iniciais
 
 criar_banco()
 
@@ -196,6 +197,7 @@ def criar_triggers():
         END;
     """)
 
+    # TRIGGERS DE AUDITORIA - Ludimila
 
     #TRIGGER 6
     #log de cadastro de usuário
@@ -292,6 +294,8 @@ def criar_triggers():
             ));
         END;
     """)
+
+    # TRIGGERS DE VALIDAÇÃO DE DADOS - Fabian
 
     # Trigger 11
     # Data de inscrição automática do usuário
@@ -407,9 +411,11 @@ def criar_triggers():
         END IF;
     END
     """)
+    
+    # TRIGGERS DE ATUALIZAÇÃO AUTOMÁTICA - Ícaro
 
     # TRIGGER 16
-    # Atualizar estoque de livros após empréstimo e devolução
+    # Atualizar estoque de livros após empréstimo
     cursor.execute("""
     CREATE TRIGGER trg_baixa_estoque_emprestimo
     AFTER INSERT ON Emprestimos
@@ -505,3 +511,9 @@ def criar_triggers():
     cursor.close() 
     conn.close() 
     print("Triggers criados com sucesso (todas independentes)")
+
+
+if __name__ == "__main__":
+    criar_tabelas()
+    criar_triggers()
+    inserir_dados_iniciais()
