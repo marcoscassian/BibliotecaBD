@@ -407,6 +407,99 @@ def criar_triggers():
         END IF;
     END
     """)
+
+    # TRIGGER 16
+    # Atualizar estoque de livros após empréstimo e devolução
+    cursor.execute("""
+    CREATE TRIGGER trg_baixa_estoque_emprestimo
+    AFTER INSERT ON Emprestimos
+    FOR EACH ROW
+    BEGIN
+        UPDATE Livros
+        SET Quantidade_disponivel = Quantidade_disponivel - 1
+        WHERE ID_livro = NEW.Livro_id;
+    END;
+    """)
+
+    # TRIGGER 17
+    # Atualizar estoque de livros após devolução
+    cursor.execute("""
+    CREATE TRIGGER trg_retorno_estoque_devolucao
+    AFTER UPDATE ON Emprestimos
+    FOR EACH ROW
+    BEGIN
+        IF OLD.Data_devolucao_real IS NULL
+           AND NEW.Data_devolucao_real IS NOT NULL THEN
+            UPDATE Livros
+            SET Quantidade_disponivel = Quantidade_disponivel + 1
+            WHERE ID_livro = NEW.Livro_id;
+
+        END IF;
+    END;
+    """)
+
+    # TRIGGER 18
+    # Inativar usuário sem empréstimos pendentes ou atrasados
+    cursor.execute("""
+    CREATE TRIGGER trg_inativar_usuario_sem_emprestimo
+    AFTER UPDATE ON Emprestimos
+    FOR EACH ROW
+    BEGIN
+        IF NEW.Status_emprestimo = 'devolvido' THEN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM Emprestimos
+                WHERE Usuario_id = NEW.Usuario_id
+                  AND Status_emprestimo IN ('pendente', 'atrasado')
+            ) THEN
+                UPDATE Usuarios
+                SET Status = 'inativo'
+                WHERE ID_usuario = NEW.Usuario_id;
+            END IF;
+
+        END IF;
+    END;
+    """)
+
+    # TRIGGER 19
+    # Calcular multa por atraso na devolução
+    cursor.execute("""
+    CREATE TRIGGER trg_calcular_multa_atraso
+    AFTER UPDATE ON Emprestimos
+    FOR EACH ROW
+    BEGIN
+        DECLARE dias_atraso INT;
+        IF NEW.Data_devolucao_real IS NOT NULL
+           AND NEW.Data_devolucao_real > NEW.Data_devolucao_prevista THEN
+            SET dias_atraso = DATEDIFF(
+                NEW.Data_devolucao_real,
+                NEW.Data_devolucao_prevista
+            );
+            UPDATE Usuarios
+            SET Multa_atual = Multa_atual + (dias_atraso * 2)
+            WHERE ID_usuario = NEW.Usuario_id;
+        END IF;
+    END;
+    """)
+
+    # TRIGGER 20
+    # Atualizar status do empréstimo com base nas datas de devolução
+    cursor.execute("""
+    CREATE TRIGGER trg_atualizar_status_emprestimo
+    BEFORE UPDATE ON Emprestimos
+    FOR EACH ROW
+    BEGIN
+        IF NEW.Data_devolucao_real IS NOT NULL THEN
+            SET NEW.Status_emprestimo = 'devolvido';
+        ELSEIF CURDATE() > NEW.Data_devolucao_prevista THEN
+            SET NEW.Status_emprestimo = 'atrasado';
+        ELSE
+            SET NEW.Status_emprestimo = 'pendente';
+        END IF;
+    END;
+    """)
+
+
     
     conn.commit() 
     cursor.close() 
