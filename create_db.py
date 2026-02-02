@@ -296,13 +296,18 @@ def criar_triggers():
     # Trigger 11
     # Data de inscrição automática do usuário
     cursor.execute("""
-    create trigger trg_val_usuario_data_inscricao
+    create trigger trg_val_usuario_email_formato
     before insert on usuarios
     for each row
     begin
-        if new.data_inscricao is null then
+        if new.email is null or trim(new.email) = '' then
             signal sqlstate '45000'
-                set message_text = 'data_inscricao obrigatoria';
+                set message_text = 'email obrigatorio';
+        end if;
+
+        if new.email not like '%_@_%._%' then
+            signal sqlstate '45000'
+                set message_text = 'email em formato invalido';
         end if;
     end
     """)
@@ -310,103 +315,96 @@ def criar_triggers():
     #Trigger 12
     # Status inicial do usuário (se vier NULL)
     cursor.execute("""
-    create trigger trg_val_usuario_status
+    create trigger trg_val_usuario_multa_nao_negativa
     before insert on usuarios
     for each row
     begin
-        if new.status is null then
+        if new.multa_atual is not null and new.multa_atual < 0 then
             signal sqlstate '45000'
-                set message_text = 'status do usuario obrigatorio';
-        end if;
-
-        if new.status not in ('ativo', 'inativo') then
-            signal sqlstate '45000'
-                set message_text = 'status do usuario invalido';
+                set message_text = 'multa_atual nao pode ser negativa';
         end if;
     end
     """)
+
 
     # TRIGGER 13
     # Rmpréstimo: setar data_emprestimo + data_devolucao_prevista + status (tudo em 1)
     
     cursor.execute("""
-    create trigger trg_val_emprestimo_dados_obrigatorios
+    create trigger trg_val_emprestimo_datas_consistentes
     before insert on emprestimos
     for each row
     begin
-        if new.data_emprestimo is null then
-            signal sqlstate '45000'
-                set message_text = 'data_emprestimo obrigatoria';
+        if new.data_devolucao_prevista is not null and new.data_emprestimo is not null then
+            if new.data_devolucao_prevista < new.data_emprestimo then
+                signal sqlstate '45000'
+                    set message_text = 'data_devolucao_prevista nao pode ser menor que data_emprestimo';
+            end if;
         end if;
 
-        if new.data_devolucao_prevista is null then
-            signal sqlstate '45000'
-                set message_text = 'data_devolucao_prevista obrigatoria';
-        end if;
-
-        if new.status_emprestimo is null then
-            signal sqlstate '45000'
-                set message_text = 'status_emprestimo obrigatorio';
-        end if;
-
-        if new.status_emprestimo not in ('pendente', 'devolvido', 'atrasado') then
-            signal sqlstate '45000'
-                set message_text = 'status_emprestimo invalido';
+        if new.data_devolucao_real is not null and new.data_emprestimo is not null then
+            if new.data_devolucao_real < new.data_emprestimo then
+                signal sqlstate '45000'
+                    set message_text = 'data_devolucao_real nao pode ser menor que data_emprestimo';
+            end if;
         end if;
     end
     """)
+
     
     #Trigger 14
     # Bloquear empréstimo se o usuário estiver inativo
     cursor.execute("""
-    create trigger trg_val_emprestimo_usuario_ativo
-    before insert ON Emprestimos
+    create trigger trg_val_emprestimo_sem_duplicidade_pendente
+    before insert on emprestimos
     for each row
     begin
-        DECLARE v_status VARCHAR(10);
-
-        SELECT Status
-        INTO v_status
-        FROM Usuarios
-        WHERE ID_usuario = NEW.Usuario_id;
-
-        IF v_status IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Usuário informado não existe.';
-        END IF;
-
-        IF v_status = 'inativo' THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Validação falhou: usuário inativo não pode realizar empréstimos.';
-        END IF;
-    END
+        if exists (
+            select 1
+            from emprestimos e
+            where e.usuario_id = new.usuario_id
+                and e.livro_id = new.livro_id
+                and e.status_emprestimo in ('pendente', 'atrasado')
+                and e.data_devolucao_real is null
+        ) then
+            signal sqlstate '45000'
+                set message_text = 'emprestimo duplicado: usuario ja possui este livro pendente/atrasado';
+        end if;
+    end
     """)
-    
+
     # TRIGGER 15
     # Bloquear empréstimo se não houver estoque disponível do livro
     cursor.execute("""
-    CREATE TRIGGER trg_val_emprestimo_livro_com_estoque
-    BEFORE INSERT ON Emprestimos
-    FOR EACH ROW
-    BEGIN
-        DECLARE v_qtd INT;
+    create trigger trg_val_emprestimo_usuario_apto
+    before insert on emprestimos
+    for each row
+    begin
+        declare v_status varchar(10);
+        declare v_multa decimal(10,2);
 
-        SELECT Quantidade_disponivel
-        INTO v_qtd
-        FROM Livros
-        WHERE ID_livro = NEW.Livro_id;
+        select status, multa_atual
+            into v_status, v_multa
+        from usuarios
+        where id_usuario = new.usuario_id;
 
-        IF v_qtd IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Livro informado não existe.';
-        END IF;
+        if v_status is null then
+            signal sqlstate '45000'
+                set message_text = 'usuario informado nao existe';
+        end if;
 
-        IF v_qtd <= 0 THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Validação falhou: livro sem estoque disponível.';
-        END IF;
-    END
+        if v_status = 'inativo' then
+            signal sqlstate '45000'
+                set message_text = 'emprestimo bloqueado: usuario inativo';
+        end if;
+
+        if v_multa is not null and v_multa > 0 then
+            signal sqlstate '45000'
+                set message_text = 'emprestimo bloqueado: usuario com multa pendente';
+        end if;
+    end
     """)
+
 
     # TRIGGER 16
     # Atualizar estoque de livros após empréstimo e devolução
@@ -429,7 +427,7 @@ def criar_triggers():
     FOR EACH ROW
     BEGIN
         IF OLD.Data_devolucao_real IS NULL
-           AND NEW.Data_devolucao_real IS NOT NULL THEN
+            AND NEW.Data_devolucao_real IS NOT NULL THEN
             UPDATE Livros
             SET Quantidade_disponivel = Quantidade_disponivel + 1
             WHERE ID_livro = NEW.Livro_id;
